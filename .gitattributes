@@ -1,0 +1,12 @@
+# Please make sure to edit all files with Unix line endings.
+
+COPYING                                       text    eol=lf
+mcc.conf                                      text    eol=lf
+META-INF/com/google/android/updater-script    text    eol=lf
+META-INF/com/google/android/update-binary     text    eol=lf
+module.prop                                   text    eol=lf
+post-fs-data.sh                               text    eol=lf
+README.md                                     text    eol=lf
+service.sh                                    text    eol=lf
+system/etc/init.d/mcc_launcher                text    eol=lf
+system/xbin/mcc                               text    eol=lf
