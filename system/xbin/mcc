@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # My Charging Controller
-# mcc Main (201807211)
+# mcc Main (201807231)
 # JayminSuthar @ xda-developers
 
 # Copyright (c) 2018 Jaymin Suthar. All rights reserved.
@@ -35,8 +35,8 @@ abort() {
 print() {
 
   case "$1" in
-    --error) echo "FATAL ERROR: $1"; ;;
-    --warn)  echo "WARNING: $1";     ;;
+    --error) echo "FATAL ERROR: $2"; ;;
+    --warn)  echo "WARNING: $2";     ;;
     *)       echo "INFO: $1";        ;;
   esac;
 }
@@ -82,7 +82,7 @@ get_prop() {
 }
 
 set_prop() {
-  sed -i "s|^$1=|$1=$2|" $cfg_path;
+  sed -i "s|^$1=.*|$1=$2|" $cfg_path;
 }
 
 auto_switch() {
@@ -425,6 +425,7 @@ case $1 in
         thr_enable=$((thr_disable - 5));
 
       elif [ $thr_disable -eq 1 ]; then
+
         thr_disable=2;
         thr_enable=1;
 
@@ -445,15 +446,15 @@ case $1 in
         is_belonging $2 15 85;
         is_belonging $3 15 85;
 
-        if [ $2 -lt $(($3+ 5)) ]; then abort "$2 is too close to $3"; fi;
+        if [ $2 -lt $(($3 + 5)) ]; then abort "$2 is too close to $3"; fi;
       fi;
 
     else
       abort 'Invalid arguments';
     fi;
 
-    set_prop thr_disable ${thr_disable}$2;
-    set_prop thr_enable  ${thr_enable}$3;
+    set_prop thr_disable $thr_disable $2;
+    set_prop thr_enable  $thr_enable  $3;
 
     print 'Auto Switch thresholds have been updated';
   ;;
@@ -542,7 +543,7 @@ case $1 in
       abort 'mcc daemon is already running';
 
     elif (! $(auto_switch) && ! $(auto_power)); then
-      abort 'Auto Togglers are both OFF';
+      abort 'Auto (daemon) Togglers are both OFF';
     fi;
 
     reconfigure;
@@ -558,6 +559,7 @@ case $1 in
   --launch-daemon)
 
     switched=false;
+    revert_ext=false;
     last_stat=default;
 
     while (:); do
@@ -581,16 +583,26 @@ case $1 in
               last_stat=ON;
               switch_ ON;
 
-            elif [ $last_stat != default ]; then
+            elif ($revert_ext); then
 
-              switch_ $last_stat;
-              if ($switched); then last_stat=default; fi;
+              if [ $last_stat != default ]; then
+
+                switch_ $last_stat;
+                if ($switched); then revert_ext=false; fi;
+              fi;
             fi;
           fi;
         ;;
 
-        disable) switch_ OFF; ;;
-        enable)  switch_ ON;  ;;
+        disable)
+          revert_ext=true;
+          switch_ OFF;
+        ;;
+
+        enable)
+          revert_ext=true;
+          switch_ ON;
+        ;;
       esac;
 
       if ($(auto_power)); then
@@ -630,15 +642,15 @@ case $1 in
     fi;
 
     if (! $(auto_switch)); then
-      sw_stat=OFF;
+      as_stat=OFF;
     else
-      sw_stat=ON;
+      as_stat=ON;
     fi;
 
     if (! $(auto_power)); then
-      pw_stat=OFF;
+      ap_stat=OFF;
     else
-      pw_stat=ON;
+      ap_stat=ON;
     fi;
 
     if (! is_runningd); then
@@ -658,16 +670,16 @@ case $1 in
     echo "- Auto Switch thresholds: $(thr_disable), $(thr_enable)";
     echo "- Auto Power  threshold : $(thr_power)";
 
-    echo "- Auto Switch status: $sw_stat";
-    echo -e "- Auto Power status : $pw_stat\n";
+    echo "- Auto Switch status: $as_stat";
+    echo -e "- Auto Power status : $ap_stat\n";
 
     echo -e "Daemon Status: $dm_stat\n";
   ;;
 
   --help)
 
-    head -n 5  $help_path;
-    head -n 61 $help_path | tail -n 40;
+    head -n 5   $help_path;
+    head -n 158 $help_path | tail -n 137;
   ;;
 
   *) abort 'Invalid arguments'; ;;

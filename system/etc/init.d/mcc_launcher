@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # My Charging Controller
-# mcc Boot S (201807221)
+# mcc Boot S (201807231)
 # JayminSuthar @ xda-developers
 
 # Copyright (c) 2018 Jaymin Suthar. All rights reserved.
@@ -38,11 +38,13 @@ if [ "$1" == --skip-errors ]; then
 
   main_path=$system/bin/mcc;
 
-  $bin_dir/busybox --install $bin_dir/;
+  umask 022;
 
   chmod 0600 $main_path;
 
   rm $mcc_dir/lock;
+
+  $bin_dir/busybox --install $bin_dir/;
 
   $bin_dir/sed -i 's/^daemon_do=.*/daemon_do=default/' $mcc_dir/mcc.conf;
 

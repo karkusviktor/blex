@@ -1,6 +1,6 @@
 #!/sbin/sh
 # My Charging Controller
-# mcc Install (201807221)
+# mcc Install (201807231)
 # JayminSuthar @ xda-developers
 
 # Copyright (c) 2018 Jaymin Suthar. All rights reserved.
@@ -20,7 +20,6 @@
 
 out_fd=/proc/self/fd/$2;
 zip_path="$3";
-
 system=/system;
 tmp_dir=/dev/mcc_tmp;
 cfg_path_tmp=$tmp_dir/mcc.conf;
@@ -40,6 +39,7 @@ if (! $boot_mode); then
     for fd in /proc/$$/fd/*; do
 
       if (readlink $fd 2>/dev/null | grep pipe >/dev/null); then
+
         if (ps | grep -v grep | grep " 3 ${fd##*/} " >/dev/null); then
 
           out_fd=/proc/self/fd/${fd##*/};
@@ -70,7 +70,7 @@ abort() {
 print() {
   
   if [ "$1" == --error ]; then
-    ui_print "FATAL ERROR: $1";
+    ui_print "FATAL ERROR: $2";
   else
     ui_print "INFO: $1";
   fi;
@@ -376,7 +376,7 @@ if ($magisk_mode); then
   rm -r $mcc_dir 2>/dev/null;
   mkdir -p $doc_dir $mcc_dir/log;
 
-  print 'Unzipping module files...';
+  print 'Unzipping mcc files...';
 
   unzip -o "$zip_path" 'system/*' bin/busybox_$arch mcc.conf post-fs-data.sh service.sh module.prop -d $mcc_dir >/dev/null;
   unzip -o "$zip_path" COPYING README.md -d $doc_dir >/dev/null;
@@ -404,6 +404,7 @@ if ($magisk_mode); then
 
   set_perm_recursive $mcc_dir      0    0 0755 0644;
   set_perm_recursive $sys_dir/*bin 0 2000 0755 0755;
+  set_perm           $bb_path      0 2000 0755;
 
 else
   mcc_dir=/data/adb/mcc;
@@ -446,7 +447,7 @@ else
   mv ${bb_path}_* $bb_path;
 
   mv -f $system/xbin/mcc $main_path;
-  if [ -z "$(ls $system/xbin)" ]; then rm -rf $system/xbin; fi;
+  if [ -z "$(ls $system/xbin)" ]; then rm -r $system/xbin; fi;
 
   print 'Setting permissions...';
 
