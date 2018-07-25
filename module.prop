@@ -1,8 +1,8 @@
 id=mcc
 name=My Charging Controller
-version=Redefined 1.0.MR
-versionCode=201807231
+version=Redefined 1.0.1
+versionCode=201807261
 author=Jaymin Suthar
-description=mcc lets you control charging in a better way.
+description=mcc lies around controlling charging in a better way.
 template=1400
 minMagisk=1500

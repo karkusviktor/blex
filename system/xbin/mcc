@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # My Charging Controller
-# mcc Main (201807231)
+# mcc Main (201807261)
 # JayminSuthar @ xda-developers
 
 # Copyright (c) 2018 Jaymin Suthar. All rights reserved.
@@ -26,43 +26,35 @@ cfg_path=$mcc_dir/mcc.conf;
 help_path=$doc_dir/README.md;
 
 abort() {
-
   echo ' ';
   print --error "$1";
   exit;
 }
 
 print() {
-
   case "$1" in
     --error) echo "FATAL ERROR: $2"; ;;
     --warn)  echo "WARNING: $2";     ;;
+    --done)  echo '- Done';          ;;
     *)       echo "INFO: $1";        ;;
   esac;
 }
 
 if (! id | grep uid=0 >/dev/null); then
-
   su -c mcc "$@";
   exit;
 fi;
-
 if ([ ! -d $mcc_dir ] || [ ! -x $bin_dir/busybox ]); then
   abort 'There was an internal error';
 fi;
 
 if [ -z "$skip_mcc_detach" ]; then
-
   skip_mcc_detach=true mcc "$@" &
   exit;
-
 elif [ -z "$disable_mcc_logs" ]; then
-
   if [ -z "$skip_mcc_errors" ]; then
-
     skip_mcc_errors=true mcc "$@" 2>$log_dir/main_err.log;
     exit;
-
   else
     set -x 2>$log_dir/main.log;
   fi;
@@ -71,13 +63,11 @@ fi;
 export PATH=$bin_dir:$PATH;
 
 get_prop() {
-
   if [ ! -f "$2" ]; then
     local prop_path=$cfg_path;
   else
     local prop_path="$2";
   fi
-
   sed -n "s/^$1=//p" $prop_path;
 }
 
@@ -105,8 +95,8 @@ thr_power() {
   get_prop thr_power;
 }
 
-daemon_do() {
-  get_prop daemon_do;
+switch_do() {
+  get_prop switch_do;
 }
 
 uevent_f() {
@@ -118,7 +108,6 @@ batt_level() {
 }
 
 is_charging() {
-
   if [ "$1" == --ck-current ]; then
     test $(get_prop POWER_SUPPLY_CURRENT_NOW $(uevent_f)) -le 0;
   else
@@ -131,28 +120,24 @@ is_runningd() {
 }
 
 is_belonging() {
-
-  if ([ $1 -le $2 ] || [ $1 -ge $3 ]); then
+  if ([ $1 -lt $2 ] || [ $1 -gt $3 ]); then
     abort "$1 does not belong to $2-$3";
   fi;
 }
 
 is_bounded() {
-  is_belonging $1 0 100;
+  is_belonging $1 1 99;
 }
 
 is_level() {
-
-  if [ ! $1 -eq $1 2>/dev/null ]; then
+  if [ ! $1 -eq $1 ]; then
     abort "$1 is not a valid number";
-
   else
     is_bounded $1;
   fi;
 }
 
 write_() {
-
   local i;
   local path;
   local key_on;
@@ -165,8 +150,7 @@ write_() {
     key_off=$(echo "$path" | awk '{ print $3 }');
     path=$(echo "$path" | awk '{ print $1 }');
 
-    if [ -z $key_on ]; then break; fi;
-
+    if [ -z "$key_on" ]; then break; fi;
     case $1 in
       OFF) echo $key_off >$switch; ;;
       ON)  echo $key_on  >$switch; ;;
@@ -176,14 +160,12 @@ write_() {
 
 switch_() {
 
-  if [ ! $1 -eq $1 2>/dev/null ]; then
-
+  if [ ! $1 -eq $1 ]; then
     case $1 in
       ON)
         local inv_stat=OFF;
         local test='! is_charging';
       ;;
-
       OFF)
         local inv_stat=ON;
         local test='is_charging';
@@ -192,17 +174,12 @@ switch_() {
         
     if (eval $test); then
       switched=false;
-
     elif (! $switched && eval "$test --ck-current"); then
-
-      switched=false;
       write_ $inv_stat;
       sleep 0.3;
-
     else
       switched=true;
     fi;
-
     if (! $switched); then write_ $1; fi;
 
   else
@@ -211,71 +188,58 @@ switch_() {
 }
 
 toggle() {
-
   local val_new;
   local stat_new;
 
   if ($($1)); then
-
     val_new=false;
     stat_new=OFF;
-
   else
     val_new=true;
     stat_new=ON;
   fi;
-
   set_prop $1 $val_new;
-
   print "$2 has been toggled $stat_new";
 }
 
 charge() {
-
   case $1 in
     --enable)
       local key_init=enable;
       local text=enabled;
     ;;
-
     --disable)
       local key_init=disable;
       local text=disabled;
     ;;
   esac;
 
-  if [ $(daemon_do) != default ]; then
-    abort 'Another mcc process is already running';
+  if [ $(switch_do) != default ]; then
+    abort 'Another mcc task is already running';
   fi;
 
   if (echo $2 | grep -Eq '^[0-9]+%$'); then
-
     local dest_level=$(echo $2 | tr -d %);
+
     is_bounded $dest_level;
-
     print "Charging $text until ${dest_level}%";
-
-    set_prop daemon_do $key_init;
+    set_prop switch_do $key_init;
     while [ $(batt_level) -ne $dest_level ]; do sleep 1; done;
 
   elif (echo $2 | grep -Eq '^[0-9]+[smh]?$'); then
 
-    set_prop daemon_do $key_init;
-
+    set_prop switch_do $key_init;
     print "Charging $text for $2";
-
     sleep $2;
 
   else
     abort "Invalid format: $2";
   fi;
-
-  set_prop daemon_do default;
-  echo '- Done';
+  set_prop switch_do default;
+  print --done;
 }
 
 reconfigure() {
-
   local i;
   local tmp;
   local key_on;
@@ -293,8 +257,7 @@ reconfigure() {
   fi;
 
   if [ "$1" != --force ]; then
-
-    if ([ -f $(uevent_f) ] && [ -f $(switch_ 1) ]); then
+    if ([ -f $(uevent_f) ] && [ -f $(switch_ 1 | awk '{ print $1 }') ]); then
       return 0;
     elif [ "$1" == --no-action ]; then
       return 1;
@@ -304,31 +267,23 @@ reconfigure() {
   for i in 1 2; do set_prop switch_$i dummySwitch; done;
 
   print 'Reconfiguring (low_level)...';
-
   find /sys/devices /sys/module -type f -name uevent >$cache_path;
 
   i=1;
-
   while read -r main_events; do
-
     if (grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*' $main_events); then
-
       set_prop uevent $main_events;
 
       while read -r chg_events; do
-
         if (grep -Eq '^POWER_SUPPLY_NAME=.*([Bb]att|USB|usb)' $chg_events || \
             grep -Eq '^DRIVER=.*[Cc]harg(er|ing)' $chg_events); then
 
           for sock_path in ${chg_events%/*}/*; do
-
             sock_info="$(ls -l $sock_path)";
-
             if (echo "$sock_info" | grep -Eq '^\-[rx\-]+w[rwx\-]* '             && \
                 (! $skip_root || echo "$sock_info" | grep -Eq ' system | radio ')); then
 
               case "$(cat $sock_path)" in
-
                 1)        key_on=1;        key_off=0;        ;;
                 0)        key_on=0;        key_off=1;        ;;
                 on)       key_on=on;       key_off=off;      ;;
@@ -341,29 +296,22 @@ reconfigure() {
                 disabled) key_on=disabled; key_off=enabled;  ;;
                 *) continue; ;;
               esac;
-
               echo $key_off >$sock_path;
               sleep 0.3;
 
               if (is_charging); then
-
                 tmp=$key_on;
                 key_on=$key_off;
                 key_off=$tmp;
-
                 echo $key_off >$sock_path;
                 sleep 0.3;
               fi;
 
               if (! is_charging); then
-
                 echo $key_on >$sock_path;
                 sleep 0.3;
-
                 if (is_charging); then
-
                   set_prop switch_$i "$sock_path $key_on $key_off";
-
                   if [ $i -eq 2 ]; then
                     break 3;
                   else
@@ -378,38 +326,31 @@ reconfigure() {
       done <$cache_path;
     fi;
   done <$cache_path;
-
   rm $cache_path;
 
-  if [ $i -gt 1 ]; then
-
-    echo '- Done';
+  if [ $i -eq 2 ]; then
+    print --done;
     print --warn 'A reboot is recommended for now';
-
   else
     set_prop uevent dummyEvents;
-    abort 'Failed to reconfigure it';
+    abort 'Failed to reconfigure';
   fi;
   return 0;
 }
 
 if [ "$1" == --force ]; then
-
   if ([ "$2" != --switch ] && [ "$2" != --power ]); then
     abort 'Invalid arguments';
   fi;
   enforce=true;
   shift;
-
 else
   enforce=false;
 fi;
 
 case $1 in
   --switch)
-
     if [ $# -eq 2 ]; then
-
       is_level "$2";
       thr_disable=$2;
 
@@ -417,218 +358,162 @@ case $1 in
 
       if [ $thr_disable -ge 25 ]; then
         thr_enable=$((thr_disable - 10));
-
       elif [ $thr_disable -ge 20 ]; then
         thr_enable=15;
-
       elif [ $thr_disable -ge 6 ]; then
         thr_enable=$((thr_disable - 5));
-
       elif [ $thr_disable -eq 1 ]; then
-
         thr_disable=2;
         thr_enable=1;
-
       else
         thr_enable=1;
       fi;
 
     elif [ $# -eq 3 ]; then
-
       is_level "$2";
       is_level "$3";
 
       if [ $2 -le $3 ]; then
         abort "$2 is not > $3";
-
       elif (! $enforce); then
-
         is_belonging $2 15 85;
         is_belonging $3 15 85;
-
         if [ $2 -lt $(($3 + 5)) ]; then abort "$2 is too close to $3"; fi;
       fi;
-
     else
       abort 'Invalid arguments';
     fi;
 
     set_prop thr_disable $thr_disable $2;
     set_prop thr_enable  $thr_enable  $3;
-
-    print 'Auto Switch thresholds have been updated';
+    print --done;
   ;;
 
   --power)
-
     if [ $# -ne 2 ]; then abort 'Invalid arguments'; fi;
 
     is_level "$2";
-
     if (! $enforce); then is_belonging $2 5 20; fi;
 
     set_prop thr_power $2;
-
-    print 'Auto Power threshold has been updated';
+    print --done;
   ;;
 
   --revert)
-  
     if [ $# -gt 1 ]; then abort 'Invalid arguments'; fi;
 
     set_prop thr_disable 80;
     set_prop thr_enable  70;
     set_prop thr_power   20;
-
-    print 'Auto (daemon) Thresholds have been reverted';
+    print --done;
   ;;
 
   --toggle)
     shift;
-
     case $1 in
       --switch)
-
         if (! $(auto_switch)); then reconfigure; fi;
         toggle auto_switch 'Auto Switch';
       ;;
-
       --power)
-
         if (! $(auto_power)); then reconfigure; fi;
         toggle auto_power 'Auto Power';
       ;;
-
       --revert)
         reconfigure;
-
         set_prop auto_switch true;
         set_prop auto_power  true;
-
-        print 'Auto (daemon) Togglers have been reverted';
+        print --done;
       ;;
-
       *) abort 'Invalid arguments'; ;;
     esac;
   ;;
 
   --enable)
-    
     if [ $# -ne 2 ]; then abort 'Invalid arguments'; fi;
     charge --enable $2;
   ;;
 
   --disable)
-
     if [ $# -ne 2 ]; then abort 'Invalid arguments'; fi;
     charge --disable $2;
   ;;
 
   --cleanup)
-
     for pid in $(ps | grep -v grep | grep '{mcc}' | grep -v $$ | awk '{ print $1 }'); do
       kill -9 $pid;
     done;
-
     rm -f $mcc_dir/lock;
-
-    set_prop daemon_do default;
-
-    print 'Cleanup done';
+    set_prop switch_do default;
+    print --done;
   ;;
 
   --redaemon)
-
-    if (is_runningd); then
-      abort 'mcc daemon is already running';
-
-    elif (! $(auto_switch) && ! $(auto_power)); then
-      abort 'Auto (daemon) Togglers are both OFF';
-    fi;
+    if (is_runningd); then abort 'The mcc daemon is already there'; fi;
 
     reconfigure;
     disable_mcc_logs=true mcc --launch-daemon </dev/null >/dev/null 2>&1;
-
-    if (! is_runningd); then
-      abort 'Failed to re-launch the daemon';
-    else
-      print 'mcc daemon has been resumed';
-    fi;
+    if (! is_runningd); then abort 'Failed to relaunch the daemon'; fi;
+    print --done;
   ;;
 
   --launch-daemon)
-
     switched=false;
     revert_ext=false;
     last_stat=default;
 
     while (:); do
-
       while (! reconfigure --no-action || [ -f $mcc_dir/lock ]); do
         sleep 0.1;
       done;
 
-      case $(daemon_do) in
+      case $(switch_do) in
         default)
-
           if ($(auto_switch)); then
-
             if [ $(batt_level) -ge $(thr_disable) ]; then
-
               last_stat=OFF;
               switch_ OFF;
 
             elif [ $(batt_level) -le $(thr_enable) ]; then
-
               last_stat=ON;
               switch_ ON;
 
             elif ($revert_ext); then
-
               if [ $last_stat != default ]; then
-
                 switch_ $last_stat;
                 if ($switched); then revert_ext=false; fi;
               fi;
             fi;
           fi;
         ;;
-
         disable)
           revert_ext=true;
           switch_ OFF;
         ;;
-
         enable)
           revert_ext=true;
           switch_ ON;
         ;;
       esac;
-
       if ($(auto_power)); then
-
         if [ $(batt_level) -le $(thr_power) ]; then
           if (! poweroff); then setprop sys.powerctl shutdown; fi;
         fi;
       fi;
-
       sleep 1;
     done;
   ;;
 
   --restat)
-
     dumpsys batterystats --reset >/dev/null;
     rm -f /data/system/batterystats.bin;
-
-    print 'Batterystats have been reset';
+    print --done;
   ;;
 
   --reconfig) reconfigure --force; ;;
 
   --reset)
-
-    disable_mcc_logs=true mcc --restat;
+    disable_mcc_logs=true mcc --restat >/dev/null;
     reconfigure --force;
   ;;
 
@@ -640,19 +525,16 @@ case $1 in
     else
       chg_stat=Charging;
     fi;
-
     if (! $(auto_switch)); then
       as_stat=OFF;
     else
       as_stat=ON;
     fi;
-
     if (! $(auto_power)); then
       ap_stat=OFF;
     else
       ap_stat=ON;
     fi;
-
     if (! is_runningd); then
       dm_stat='Not running';
     else
@@ -669,18 +551,20 @@ case $1 in
 
     echo "- Auto Switch thresholds: $(thr_disable), $(thr_enable)";
     echo "- Auto Power  threshold : $(thr_power)";
-
-    echo "- Auto Switch status: $as_stat";
-    echo -e "- Auto Power status : $ap_stat\n";
+    echo "- Auto Switch status    : $as_stat";
+    echo -e "- Auto Power status     : $ap_stat\n";
 
     echo -e "Daemon Status: $dm_stat\n";
   ;;
 
   --help)
-
     head -n 5   $help_path;
-    head -n 158 $help_path | tail -n 137;
+    head -n 159 $help_path | tail -n 138;
   ;;
 
-  *) abort 'Invalid arguments'; ;;
+  *)
+    print --error 'No arguments supplied';
+    disable_mcc_logs=true mcc --help;
+  ;;
 esac;
+exit 0;

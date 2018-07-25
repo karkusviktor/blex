@@ -1,5 +1,5 @@
 ###### My Charging Controller
-###### mcc README (201807231)
+###### mcc README (201807261)
 ###### JayminSuthar @ xda-developers
 
 ###### Copyright (c) 2018 Jaymin Suthar. All rights reserved.
@@ -130,11 +130,12 @@
 ## Tips/Misc...
 
 * mcc recognizes root access and handles calling su for you.
+* If mcc causes a reboot while configuring, create a file at
+   /data/adb/skip_mcc_root.
 * The mcc daemon will go to sleep if '$mcc_dir/lock' exists.
 * mcc runs in a detached mode, which means you can close the
    terminal afterwards.
 * mcc disables logging if '$disable_mcc_logs' exists in env.
-* mcc performs it intelligently at each step, so no worries!
 
 ## Remember
 
@@ -158,6 +159,16 @@
 * Please hit 'Thanks' if you like my work.
 
 ## Release Notes
+
+#### Redefined 1.0.1
+
+* Fix daemon not launching with beta Magisk.
+* Fix control reference nodes never identified.
+   -> This should fix daemon not working and always reconfiguring.
+* Fix safe boundaries for [--switch/--power].
+* Fix some algotithmic flaws.
+* Update BusyBox to 1.29.1.
+* Update strings.
 
 #### Redefined 1.0.MR
 

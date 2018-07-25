@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # My Charging Controller
-# mcc Boot 1 (201807231)
+# mcc Boot 1 (201807261)
 # JayminSuthar @ xda-developers
 
 # Copyright (c) 2018 Jaymin Suthar. All rights reserved.
@@ -28,11 +28,8 @@ set -x 2>$log_dir/boot.log;
 main_path=$(ls $sys_dir/xbin/mcc || ls $sys_dir/bin/mcc);
 
 sed -i "s|^mcc_dir=.*|mcc_dir=$mcc_dir;|" $main_path;
-
-chmod 0600 $main_path;
-
 grep '^mcc_dir=' $main_path >&2;
-
+chmod 0600 $main_path;
 touch $mcc_dir/pfsd_done;
 
 ) 2>$log_dir/boot_err.log &

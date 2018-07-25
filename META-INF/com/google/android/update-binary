@@ -1,6 +1,6 @@
 #!/sbin/sh
 # My Charging Controller
-# mcc Install (201807231)
+# mcc Install (201807261)
 # JayminSuthar @ xda-developers
 
 # Copyright (c) 2018 Jaymin Suthar. All rights reserved.
@@ -10,7 +10,7 @@
 # mcc is released under the terms of the GNU GPL v3, as been
 ## published by the Free Software Foundation. And permission
 ## hereby is granted to use, modify or redistribute it maybe
-## partially or entirely under GPLv3 only.
+# partially or entirely under GPLv3 only.
 
 # mcc was written in a hope of being useful. And any kind of
 ## warranty is not provided. See GPLv3 for details.
@@ -31,17 +31,11 @@ else
 fi;
 
 if (! $boot_mode); then
-
   mount -o bind /dev/urandom /dev/random;
-
   if (readlink /proc/$$/fd/$2 2>/dev/null | grep /tmp >/dev/null); then
-
     for fd in /proc/$$/fd/*; do
-
       if (readlink $fd 2>/dev/null | grep pipe >/dev/null); then
-
         if (ps | grep -v grep | grep " 3 ${fd##*/} " >/dev/null); then
-
           out_fd=/proc/self/fd/${fd##*/};
           break;
         fi;
@@ -51,7 +45,6 @@ if (! $boot_mode); then
 fi;
 
 ui_print() {
-
   if (! $boot_mode); then
     echo -e "ui_print $1\nui_print" >>$out_fd;
   else
@@ -60,7 +53,6 @@ ui_print() {
 }
 
 abort() {
-
   ui_print ' ';
   print --error "$1";
   cleanup;
@@ -68,7 +60,6 @@ abort() {
 }
 
 print() {
-  
   if [ "$1" == --error ]; then
     ui_print "FATAL ERROR: $2";
   else
@@ -77,10 +68,7 @@ print() {
 }
 
 cleanup() {
-
   local mounted;
-
-  print 'Cleaning...';
 
   umount $mount_dir 2>/dev/null;
   losetup -d $loopdev_path 2>/dev/null;
@@ -88,7 +76,6 @@ cleanup() {
   rm -r $tmp_dir $mcc_dir $main_path $init_path 2>/dev/null;
 
   if (! $boot_mode); then
-
     for mounted in /system /vendor /dev/random; do
       if (! umount $mounted 2>/dev/null); then umount -l $mounted; fi;
     done;
@@ -100,11 +87,9 @@ is_mounted() {
 }
 
 mount_for_ab() {
-
   local device_path;
 
   if (is_mounted "$2"); then umount "$2"; fi;
-
   if (! is_mounted "$2"); then
 
     device_path=$(find /dev/block -iname $1$slot 2>/dev/null | head -n 1);
@@ -112,49 +97,41 @@ mount_for_ab() {
 
     mount -t ext4 -o ro $device_path "$2" 2>/dev/null || \
     mount -t ext4 -o ro,remount $device_path "$2";
-
     return $?;
   fi;
   return 1;
 }
 
-get_prop() {
+get_prop() { 
   cat "$2" | grep -m 1 "^$1=" | cut -d= -f2;
 }
 
 get_imgsize() {
-
   case $1 in
     --total) local field=2; ;;
     --used)  local field=1; ;;
   esac;
-
   local blocks=$(e2fsck -n $img_path | grep -Eo '[0-9]+/[0-9]+ blocks' | cut -d/ -f$field | cut -d' ' -f1);
   echo $(((blocks + 255) / 256));
 }
 
-set_prop() {
-
+set_eprop() {
   local line;
   local tmp_path=$tmp_dir/tmp;
 
   while read -r line; do
-
     if (echo "$line" | grep "^$1=" >/dev/null); then
       echo "$1=$2" >>$tmp_path;
     else
       echo "$line" >>$tmp_path;
     fi;
   done <"$3";
-
   mv -f $tmp_path "$3";
 }
 
 set_perm() {
-
   if (! chown $2:$3 "$1" 2>/dev/null); then chown $2.$3 "$1"; fi;
   chmod $4 "$1";
-
   if [ -z "$5" ]; then
     chcon u:object_r:system_file:s0 "$1";
   else
@@ -163,11 +140,9 @@ set_perm() {
 }
 
 set_perm_recursive() {
-
   local entry;
 
   find "$1" 2>/dev/null | while read -r entry; do
-
     if [ -d "$entry" ]; then
       set_perm "$entry" $2 $3 $4 "$6";
     else
@@ -177,52 +152,39 @@ set_perm_recursive() {
 }
 
 restore_cfg() {
-
-  if (! $magisk_mode); then
-    local final_path=$mcc_dir/mcc.conf;
-  else
-    local final_path=$cfg_path;
-  fi;
-
   if [ -f $cfg_path_tmp ]; then
-
     print 'Restoring old config...';
-
     for prop in auto_switch auto_power thr_disable thr_enable thr_power; do
-      set_prop $prop $(get_prop $prop $cfg_path_tmp) $final_path;
+      set_prop $prop $(get_prop $prop $cfg_path_tmp) $cfg_path $mcc_dir/mcc.conf;
     done;
   fi;
 }
 
 warn_for_system_install() {
-
   magisk_mode=false;
 
   ui_print ' ';
-  ui_print '*************************************************************';
-  ui_print '             Failed to detect support for Magisk             ';
-  ui_print '*************************************************************';
-  ui_print '         Forcing a system installation as a fallback         ';
-  ui_print '*************************************************************';
+  ui_print '************************************************************';
+  ui_print '            Failed to detect support for Magisk             ';
+  ui_print '************************************************************';
+  ui_print '        Forcing a system installation as a fallback         ';
+  ui_print '************************************************************';
   ui_print ' ';
 }
 
 ui_print ' ';
-ui_print '*************************************************************';
-ui_print '                   My Charging Controller                    ';
-ui_print '*************************************************************';
-ui_print '      mcc is developed and copyrighted by Jaymin Suthar      ';
-ui_print '*************************************************************';
+ui_print '************************************************************';
+ui_print '                  My Charging Controller                    ';
+ui_print '************************************************************';
+ui_print '     mcc is developed and copyrighted by Jaymin Suthar      ';
+ui_print '************************************************************';
 ui_print ' ';
 
 print 'Preparing environment, mounts...';
-
 umask 022;
 
 if (! which unzip >/dev/null); then abort 'Failed to find unzip'; fi;
-
 if (! is_mounted /data); then
-
   if (! mount /data 2>/dev/null); then
     if (! mount -o rw,remount /data); then abort 'Failed to mount /data'; fi;
   fi;
@@ -233,26 +195,21 @@ if (! slot=$(get_prop androidboot.slot_suffix /proc/cmdline 2>/dev/null)); then
 fi;
 
 print 'Mounting /system, /vendor (ro)...';
-
 if [ -n "$slot" ]; then
 
   print "A/B slot scheme detected, using: $slot";
-
   if (! mount_for_ab system /system); then
     mount_for_ab system_root /system;
   fi;
 
   if [ -f /system/init.rc ]; then
-
     print 'system_root image scheme detected';
     system=/system/system;
   fi;
-
   if [ -L $system/vendor ]; then mount_for_ab vendor /vendor; fi;
 
 else
   for mount_it in /system /vendor; do
-
     if (! mount -o ro $mount_it 2>/dev/null); then
       mount -o ro,remount $mount_it;
     fi;
@@ -261,7 +218,6 @@ fi;
 
 if (! is_mounted /system); then
   abort 'Failed to mount /system';
-
 elif [ -L $system/vendor ]; then
   if (! is_mounted /vendor); then abort 'Failed to mount /vendor'; fi;
 fi;
@@ -273,9 +229,7 @@ if (echo $abi_long | grep arm >/dev/null); then
 else
   arch=x86;
 fi;
-
 if (! $boot_mode); then
-
   if (echo $abi_long | grep -E 'arm64|x86_64' >/dev/null); then
     export LD_LIBRARY_PATH=$system/lib64:$system/vendor/lib64;
   else
@@ -286,14 +240,12 @@ fi;
 print 'Detecting Magisk support...';
 
 if [ -d /data/adb/magisk ]; then
-
   magisk_mode=true;
   func_path=/data/adb/magisk/util_functions.sh;
   img_path=/data/adb/magisk.img;
   mcc_dir_boot=/sbin/.core/img/mcc;
 
 elif [ -d /data/magisk ]; then
-
   magisk_mode=true;
   func_path=/data/magisk/util_functions.sh;
   img_path=/data/magisk.img;
@@ -302,11 +254,9 @@ elif [ -d /data/magisk ]; then
 else
   warn_for_system_install;
 fi;
-
 if ($magisk_mode && [ ! -f $func_path ]); then warn_for_system_install; fi;
 
 if ($magisk_mode); then
-
   mount_dir=$tmp_dir/img;
   mcc_dir=$mount_dir/mcc;
   bin_dir=$mcc_dir/bin;
@@ -324,7 +274,6 @@ if ($magisk_mode); then
   print 'Installing mcc...';
 
   mkdir -p $mount_dir;
-
   if [ -f $img_path ]; then
 
     e2fsck -p -f $img_path >/dev/null;
@@ -333,14 +282,11 @@ if ($magisk_mode); then
     img_used=$(get_imgsize --used);
 
     if [ $img_total -eq $img_used ]; then
-
       print "Expanding $img_path...";
       resize2fs $img_path $((img_total + 32))M >/dev/null;
     fi;
-
   else
     print "Creating $img_path...";
-
     if (! make_ext4fs -l 64M $img_path >/dev/null); then
       $system/bin/mke2fs -t ext4 $img_path 64M >/dev/null;
     fi;
@@ -349,18 +295,14 @@ if ($magisk_mode); then
   print "Mounting $img_path...";
 
   for minor in 0 1 2 3 4 5 6 7; do
-
     loopdev_path=/dev/block/loop$minor;
 
     if [ ! -f $loopdev_path ]; then
       if [ ! -b $loopdev_path ]; then mknod $loopdev_path b 7 $minor; fi;
     fi;
-
     if (losetup $loopdev_path $img_path >/dev/null 2>&1); then
-
-      if (mount -t ext4 -o rw,noatime $loopdev_path $mount_dir 2>/dev/null); then
-        break;
-      elif (mount -t ext4 -o rw,loop $loopdev_path $mount_dir); then
+      if (mount -t ext4 -o rw,noatime $loopdev_path $mount_dir 2>/dev/null || \
+          mount -t ext4 -o rw,loop $loopdev_path $mount_dir); then
         break;
       fi;
     fi;
@@ -372,36 +314,27 @@ if ($magisk_mode); then
   else
     cp $cfg_path $tmp_dir/ 2>/dev/null;
   fi;
-
   rm -r $mcc_dir 2>/dev/null;
   mkdir -p $doc_dir $mcc_dir/log;
 
   print 'Unzipping mcc files...';
-
   unzip -o "$zip_path" 'system/*' bin/busybox_$arch mcc.conf post-fs-data.sh service.sh module.prop -d $mcc_dir >/dev/null;
   unzip -o "$zip_path" COPYING README.md -d $doc_dir >/dev/null;
 
   restore_cfg;
-
   print 'Setting up...';
-
   rm -r $sys_dir/etc;
-
   mv ${bb_path}_* $bb_path;
-
   if [ ! -d $system/xbin ]; then mv $sys_dir/xbin $sys_dir/bin; fi;
 
   touch $mcc_dir/auto_mount;
-
   if ($boot_mode); then
-
     mkdir $mcc_dir_boot 2>/dev/null;
     touch $mcc_dir_boot/update;
     cp -f $mcc_dir/module.prop $mcc_dir_boot/;
   fi;
 
   print 'Setting permissions...';
-
   set_perm_recursive $mcc_dir      0    0 0755 0644;
   set_perm_recursive $sys_dir/*bin 0 2000 0755 0755;
   set_perm           $bb_path      0 2000 0755;
@@ -421,7 +354,6 @@ else
   fi;
 
   if [ ! -d ${init_path%/*} ]; then
-
     ui_print ' ';
     print --error 'Failed to detect init.d support';
     abort "Please check 'Init.d Injector' for this";
@@ -430,27 +362,21 @@ else
   print 'Installing mcc...';
 
   mv $mcc_dir/mcc.conf $tmp_dir/ 2>/dev/null;
-
   rm -r $mcc_dir 2>/dev/null;
   mkdir -p $doc_dir $mcc_dir/log;
 
   print 'Unzipping mcc files...';
-
   unzip -o "$zip_path" 'system/*' -d $root >/dev/null;
   unzip -o "$zip_path" bin/busybox_$arch mcc.conf -d $mcc_dir >/dev/null;
   unzip -o "$zip_path" COPYING README.md -d $doc_dir >/dev/null;
 
   restore_cfg;
-
   print 'Setting up...';
-
   mv ${bb_path}_* $bb_path;
-
   mv -f $system/xbin/mcc $main_path;
   if [ -z "$(ls $system/xbin)" ]; then rm -r $system/xbin; fi;
 
   print 'Setting permissions...';
-
   set_perm_recursive $mcc_dir   0    0 0700 0600 u:object_r:adb_data_file:s0;
   set_perm           $bb_path   0 2000 0710      u:object_r:adb_data_file:s0;
   set_perm           $main_path 0 2000 0755;
@@ -458,6 +384,5 @@ else
 fi;
 
 cleanup;
-
 ui_print '- Done';
 exit 0;
