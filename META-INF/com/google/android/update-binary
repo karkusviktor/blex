@@ -1,6 +1,6 @@
 #!/sbin/sh
 # My Charging Controller
-# mcc Install (201807261)
+# mcc Install (201807271)
 # JayminSuthar @ xda-developers
 
 # Copyright (c) 2018 Jaymin Suthar. All rights reserved.
@@ -20,8 +20,7 @@
 
 out_fd=/proc/self/fd/$2;
 zip_path="$3";
-system=/system;
-tmp_dir=/dev/mcc_tmp;
+tmp_dir=/dev/tmp_$$;
 cfg_path_tmp=$tmp_dir/mcc.conf;
 
 if (! echo "$(ps -A 2>/dev/null || ps)" | grep -v grep | grep zygote >/dev/null); then
@@ -35,8 +34,9 @@ if (! $boot_mode); then
   if (readlink /proc/$$/fd/$2 2>/dev/null | grep /tmp >/dev/null); then
     for fd in /proc/$$/fd/*; do
       if (readlink $fd 2>/dev/null | grep pipe >/dev/null); then
-        if (ps | grep -v grep | grep " 3 ${fd##*/} " >/dev/null); then
-          out_fd=/proc/self/fd/${fd##*/};
+        fd=${fd##*/};
+        if (ps | grep -v grep | grep " 3 $fd " >/dev/null); then
+          out_fd=/proc/self/fd/$fd;
           break;
         fi;
       fi;
@@ -68,11 +68,9 @@ print() {
 }
 
 cleanup() {
-  local mounted;
 
   umount $mount_dir 2>/dev/null;
   losetup -d $loopdev_path 2>/dev/null;
-
   rm -r $tmp_dir $mcc_dir $main_path $init_path 2>/dev/null;
 
   if (! $boot_mode); then
@@ -87,19 +85,17 @@ is_mounted() {
 }
 
 mount_for_ab() {
-  local device_path;
 
-  if (is_mounted "$2"); then umount "$2"; fi;
-  if (! is_mounted "$2"); then
-
-    device_path=$(find /dev/block -iname $1$slot 2>/dev/null | head -n 1);
-    device_path=$(readlink $device_path 2>/dev/null || echo $device_path);
-
-    mount -t ext4 -o ro $device_path "$2" 2>/dev/null || \
-    mount -t ext4 -o ro,remount $device_path "$2";
-    return $?;
+  if (is_mounted "$2"); then
+    if (! umount "$2"); then return 1; fi;
   fi;
-  return 1;
+
+  device_path=$(find /dev/block -iname $1$slot 2>/dev/null | head -n 1);
+  device_path=$(readlink $device_path 2>/dev/null || echo $device_path);
+
+  mount -t ext4 -o ro $device_path "$2" 2>/dev/null || \
+  mount -t ext4 -o ro,remount $device_path "$2";
+  return $?;
 }
 
 get_prop() { 
@@ -108,15 +104,14 @@ get_prop() {
 
 get_imgsize() {
   case $1 in
-    --total) local field=2; ;;
-    --used)  local field=1; ;;
+    --total) field=2; ;;
+    --used)  field=1; ;;
   esac;
-  local blocks=$(e2fsck -n $img_path | grep -Eo '[0-9]+/[0-9]+ blocks' | cut -d/ -f$field | cut -d' ' -f1);
+  blocks=$(e2fsck -n $img_path | grep -Eo '[0-9]+/[0-9]+ blocks' | cut -d/ -f$field | cut -d' ' -f1);
   echo $(((blocks + 255) / 256));
 }
 
-set_eprop() {
-  local line;
+set_prop() {
   local tmp_path=$tmp_dir/tmp;
 
   while read -r line; do
@@ -140,8 +135,6 @@ set_perm() {
 }
 
 set_perm_recursive() {
-  local entry;
-
   find "$1" 2>/dev/null | while read -r entry; do
     if [ -d "$entry" ]; then
       set_perm "$entry" $2 $3 $4 "$6";
@@ -201,10 +194,11 @@ if [ -n "$slot" ]; then
   if (! mount_for_ab system /system); then
     mount_for_ab system_root /system;
   fi;
-
   if [ -f /system/init.rc ]; then
     print 'system_root image scheme detected';
     system=/system/system;
+  else
+    system=/system;
   fi;
   if [ -L $system/vendor ]; then mount_for_ab vendor /vendor; fi;
 
@@ -347,11 +341,8 @@ else
   main_path=$system/bin/mcc;
   init_path=$system/etc/init.d/mcc_launcher;
 
-  if [ -n "${system%/*}" ]; then
-    root=${system%/*};
-  else
-    root=/;
-  fi;
+  root=${system%/*};
+  if [ -z "$root" ]; then root=/; fi;
 
   if [ ! -d ${init_path%/*} ]; then
     ui_print ' ';

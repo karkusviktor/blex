@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # My Charging Controller
-# mcc Boot 2 (201807261)
+# mcc Boot 2 (201807271)
 # JayminSuthar @ xda-developers
 
 # Copyright (c) 2018 Jaymin Suthar. All rights reserved.

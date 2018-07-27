@@ -1,5 +1,5 @@
 ###### My Charging Controller
-###### mcc README (201807261)
+###### mcc README (201807271)
 ###### JayminSuthar @ xda-developers
 
 ###### Copyright (c) 2018 Jaymin Suthar. All rights reserved.
@@ -28,20 +28,36 @@
 
 * #### mcc lies around controlling charging in a better way.
 
+## Description
+
+* mcc provides Automated and Manual methods. Auto Switch and
+   Auto Power are part of the automation, whereas [--restat]
+   and [--enable/--disable] are manual methods. Others there
+   are extensions for both these. Auto Switch makes charging
+   to stop when battery level exceeds 'thr_disable', and re-
+   start when it falls below 'thr_enable'. Auto Power powers
+   OFF the device when the level goes below 'thr_power'. For
+   details about other features, check options.
+
+## Installation
+
+* Flash mcc from recovery or Magisk Manager. mcc will detect
+   and perform a Magisk > system installation.
+
 ## Usage
 
 * Run `mcc [OPTIONS]` from a good terminal (such as Termux).
 
 ## Setup
 
-* Run the '--reconfig' option for the first time you use it.
+* Call the [--reconfig] option after every mcc installation.
 
 ## Options
 
 * [--switch] [thr_disable] [thr_enable]
 
 -> Sets Auto Switch thresholds to thr_disable, thr_enable. A
-    good thing suggests [thr_enable] to be optional.
+    good thing suggests thr_enable to be optional.
 
 * [--power] [thr_power]
 
@@ -67,7 +83,7 @@
 
 * [--disable] [level/time]
 
--> Same as above, except for charging is disabled with this.
+-> Same as above, except for charging is disabled.
 
 * [--cleanup]
 
@@ -84,7 +100,7 @@
 
 * [--reconfig]
 
--> Reconfigures mcc at the low_level, requiring charging ON.
+-> Reconfigures mcc at lower level, requiring charging ON.
 
 * [--reset]
 
@@ -140,8 +156,8 @@
 ## Remember
 
 * The mcc daemon handles all the switching, CLI communicates
-   with it for manual mode.
-* The '--cleanup' option kills the mcc daemon, too. Careful!
+   with it for manual methods.
+* The [--cleanup] option kills the mcc daemon, too. Careful!
 * Resetting batterystats does not work for some old devices.
 
 ## Support
@@ -153,12 +169,19 @@
 
 * @topjohnwu for creating Magisk.
 * @osm0sis for their BusyBox binaries.
+* Every mcc beta testers :).
 
 ## Encourage Me
 
 * Please hit 'Thanks' if you like my work.
 
 ## Release Notes
+
+#### Redefined 1.0.2
+
+* Fix the daemon not writing control nodes.
+* Internal code improvements.
+* Update README.
 
 #### Redefined 1.0.1
 

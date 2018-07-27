@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # My Charging Controller
-# mcc Main (201807261)
+# mcc Main (201807271)
 # JayminSuthar @ xda-developers
 
 # Copyright (c) 2018 Jaymin Suthar. All rights reserved.
@@ -23,6 +23,7 @@ log_dir=$mcc_dir/log;
 bin_dir=$mcc_dir/bin;
 doc_dir=$mcc_dir/docs;
 cfg_path=$mcc_dir/mcc.conf;
+lock_path=$mcc_dir/lock;
 help_path=$doc_dir/README.md;
 
 abort() {
@@ -47,7 +48,6 @@ fi;
 if ([ ! -d $mcc_dir ] || [ ! -x $bin_dir/busybox ]); then
   abort 'There was an internal error';
 fi;
-
 if [ -z "$skip_mcc_detach" ]; then
   skip_mcc_detach=true mcc "$@" &
   exit;
@@ -64,10 +64,10 @@ export PATH=$bin_dir:$PATH;
 
 get_prop() {
   if [ ! -f "$2" ]; then
-    local prop_path=$cfg_path;
+    prop_path=$cfg_path;
   else
-    local prop_path="$2";
-  fi
+    prop_path="$2";
+  fi;
   sed -n "s/^$1=//p" $prop_path;
 }
 
@@ -138,22 +138,18 @@ is_level() {
 }
 
 write_() {
-  local i;
-  local path;
-  local key_on;
-  local key_off;
 
   for i in 1 2; do
 
-    path="$(switch_ $i)";
-    key_on=$(echo "$path" | awk '{ print $2 }');
-    key_off=$(echo "$path" | awk '{ print $3 }');
-    path=$(echo "$path" | awk '{ print $1 }');
+    sw_path="$(switch_ $i)";
+    key_on=$(echo "$sw_path" | awk '{ print $2 }');
+    key_off=$(echo "$sw_path" | awk '{ print $3 }');
+    sw_path=$(echo "$sw_path" | awk '{ print $1 }');
 
     if [ -z "$key_on" ]; then break; fi;
     case $1 in
-      OFF) echo $key_off >$switch; ;;
-      ON)  echo $key_on  >$switch; ;;
+      OFF) echo $key_off >$sw_path; ;;
+      ON)  echo $key_on  >$sw_path; ;;
     esac;
   done;
 }
@@ -163,15 +159,15 @@ switch_() {
   if [ ! $1 -eq $1 ]; then
     case $1 in
       ON)
-        local inv_stat=OFF;
-        local test='! is_charging';
+        inv_stat=OFF;
+        test='! is_charging';
       ;;
       OFF)
-        local inv_stat=ON;
-        local test='is_charging';
+        inv_stat=ON;
+        test='is_charging';
       ;;
     esac;
-        
+
     if (eval $test); then
       switched=false;
     elif (! $switched && eval "$test --ck-current"); then
@@ -188,9 +184,6 @@ switch_() {
 }
 
 toggle() {
-  local val_new;
-  local stat_new;
-
   if ($($1)); then
     val_new=false;
     stat_new=OFF;
@@ -205,21 +198,25 @@ toggle() {
 charge() {
   case $1 in
     --enable)
-      local key_init=enable;
-      local text=enabled;
+      key_init=enable;
+      text=enabled;
     ;;
     --disable)
-      local key_init=disable;
-      local text=disabled;
+      key_init=disable;
+      text=disabled;
     ;;
   esac;
 
-  if [ $(switch_do) != default ]; then
+  if (! is_runningd); then
+    abort 'The mcc daemon is not running';
+  elif [ $(switch_do) != default ]; then
     abort 'Another mcc task is already running';
   fi;
 
+  reconfigure;
   if (echo $2 | grep -Eq '^[0-9]+%$'); then
-    local dest_level=$(echo $2 | tr -d %);
+
+    dest_level=$(echo $2 | tr -d %);
 
     is_bounded $dest_level;
     print "Charging $text until ${dest_level}%";
@@ -240,20 +237,12 @@ charge() {
 }
 
 reconfigure() {
-  local i;
-  local tmp;
-  local key_on;
-  local key_off;
-  local sock_path;
-  local sock_info;
-  local chg_events;
-  local main_events;
   local cache_path=$mcc_dir/tmp.cache;
 
   if [ ! -f /data/adb/mcc_skip_root ]; then
-    local skip_root=false;
+    skip_root=false;
   else
-    local skip_root=true;
+    skip_root=true;
   fi;
 
   if [ "$1" != --force ]; then
@@ -330,7 +319,7 @@ reconfigure() {
 
   if [ $i -eq 2 ]; then
     print --done;
-    print --warn 'A reboot is recommended for now';
+    print --warn 'A reboot is recommended to prevent conflicts';
   else
     set_prop uevent dummyEvents;
     abort 'Failed to reconfigure';
@@ -351,18 +340,17 @@ fi;
 case $1 in
   --switch)
     if [ $# -eq 2 ]; then
+
       is_level "$2";
-      thr_disable=$2;
+      if (! $enforce); then is_belonging $2 20 85; fi;
 
-      if (! $enforce); then is_belonging $thr_disable 20 85; fi;
-
-      if [ $thr_disable -ge 25 ]; then
-        thr_enable=$((thr_disable - 10));
-      elif [ $thr_disable -ge 20 ]; then
+      if [ $2 -ge 25 ]; then
+        thr_enable=$(($2 - 10));
+      elif [ $2 -ge 20 ]; then
         thr_enable=15;
-      elif [ $thr_disable -ge 6 ]; then
-        thr_enable=$((thr_disable - 5));
-      elif [ $thr_disable -eq 1 ]; then
+      elif [ $2 -ge 6 ]; then
+        thr_enable=$(($2 - 5));
+      elif [ $2 -eq 1 ]; then
         thr_disable=2;
         thr_enable=1;
       else
@@ -370,6 +358,7 @@ case $1 in
       fi;
 
     elif [ $# -eq 3 ]; then
+
       is_level "$2";
       is_level "$3";
 
@@ -380,10 +369,10 @@ case $1 in
         is_belonging $3 15 85;
         if [ $2 -lt $(($3 + 5)) ]; then abort "$2 is too close to $3"; fi;
       fi;
+
     else
       abort 'Invalid arguments';
     fi;
-
     set_prop thr_disable $thr_disable $2;
     set_prop thr_enable  $thr_enable  $3;
     print --done;
@@ -412,14 +401,21 @@ case $1 in
     shift;
     case $1 in
       --switch)
-        if (! $(auto_switch)); then reconfigure; fi;
+        if (! $(auto_switch)); then
+          if (! is_runningd); then abort 'The mcc daemon is not running'; fi;
+          reconfigure;
+        fi;
         toggle auto_switch 'Auto Switch';
       ;;
       --power)
-        if (! $(auto_power)); then reconfigure; fi;
+        if (! $(auto_power)); then
+          if (! is_runningd); then abort 'The mcc daemon is not running'; fi;
+          reconfigure;
+        fi;
         toggle auto_power 'Auto Power';
       ;;
       --revert)
+        if (! is_runningd); then abort 'The mcc daemon is not running'; fi;
         reconfigure;
         set_prop auto_switch true;
         set_prop auto_power  true;
@@ -443,7 +439,7 @@ case $1 in
     for pid in $(ps | grep -v grep | grep '{mcc}' | grep -v $$ | awk '{ print $1 }'); do
       kill -9 $pid;
     done;
-    rm -f $mcc_dir/lock;
+    rm -f $lock_path;
     set_prop switch_do default;
     print --done;
   ;;
@@ -463,10 +459,15 @@ case $1 in
     last_stat=default;
 
     while (:); do
-      while (! reconfigure --no-action || [ -f $mcc_dir/lock ]); do
+      while (! reconfigure --no-action || [ -f $lock_path ]); do
         sleep 0.1;
       done;
 
+      if ($(auto_power)); then
+        if [ $(batt_level) -le $(thr_power) ]; then
+          if (! poweroff); then setprop sys.powerctl shutdown; fi;
+        fi;
+      fi;
       case $(switch_do) in
         default)
           if ($(auto_switch)); then
@@ -495,11 +496,6 @@ case $1 in
           switch_ ON;
         ;;
       esac;
-      if ($(auto_power)); then
-        if [ $(batt_level) -le $(thr_power) ]; then
-          if (! poweroff); then setprop sys.powerctl shutdown; fi;
-        fi;
-      fi;
       sleep 1;
     done;
   ;;
@@ -559,12 +555,11 @@ case $1 in
 
   --help)
     head -n 5   $help_path;
-    head -n 159 $help_path | tail -n 138;
+    head -n 176 $help_path | tail -n 155;
   ;;
 
   *)
-    print --error 'No arguments supplied';
+    print --error 'No arguments given';
     disable_mcc_logs=true mcc --help;
   ;;
 esac;
-exit 0;
