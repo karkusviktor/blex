@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # My Charging Controller
-# mcc Main (201807271)
+# mcc Core/Main Script
 # JayminSuthar @ xda-developers
 
 # Copyright (c) 2018 Jaymin Suthar. All rights reserved.
@@ -18,13 +18,12 @@
 # You should already have received a copy of GPLv3 with mcc,
 ## if not, see <http://www.gnu.org/licenses/>.
 
-mcc_dir=/data/adb/mcc;
+mcc_dir=/data/adb/mcc
 log_dir=$mcc_dir/log;
 bin_dir=$mcc_dir/bin;
-doc_dir=$mcc_dir/docs;
-cfg_path=$mcc_dir/mcc.conf;
 lock_path=$mcc_dir/lock;
-help_path=$doc_dir/README.md;
+cfg_path=$mcc_dir/mcc.conf;
+help_path=$mcc_dir/docs/README.md;
 
 abort() {
   echo ' ';
@@ -42,19 +41,19 @@ print() {
 }
 
 if (! id | grep uid=0 >/dev/null); then
-  su -c mcc "$@";
-  exit;
-fi;
-if ([ ! -d $mcc_dir ] || [ ! -x $bin_dir/busybox ]); then
+  abort 'mcc requires a root shell';
+elif ([ ! -d $mcc_dir ] || [ ! -x $bin_dir/awk ]); then
   abort 'There was an internal error';
+elif [ -f $lock_path ]; then
+  abort 'mcc execution is blocked';
 fi;
+
 if [ -z "$skip_mcc_detach" ]; then
-  skip_mcc_detach=true mcc "$@" &
+  (skip_mcc_detach=true mcc "$@" &);
   exit;
 elif [ -z "$disable_mcc_logs" ]; then
   if [ -z "$skip_mcc_errors" ]; then
-    skip_mcc_errors=true mcc "$@" 2>$log_dir/main_err.log;
-    exit;
+    skip_mcc_errors=true exec mcc "$@" 2>$log_dir/main_err.log;
   else
     set -x 2>$log_dir/main.log;
   fi;
@@ -63,16 +62,15 @@ fi;
 export PATH=$bin_dir:$PATH;
 
 get_prop() {
-  if [ ! -f "$2" ]; then
-    prop_path=$cfg_path;
-  else
-    prop_path="$2";
-  fi;
-  sed -n "s/^$1=//p" $prop_path;
+  sed -n "s/^$1=//p" $(ls "$2" || echo $cfg_path);
 }
 
 set_prop() {
   sed -i "s|^$1=.*|$1=$2|" $cfg_path;
+}
+
+get_event() {
+  get_prop POWER_SUPPLY_$1 $(uevent_f);
 }
 
 auto_switch() {
@@ -104,14 +102,14 @@ uevent_f() {
 }
 
 batt_level() {
-  get_prop POWER_SUPPLY_CAPACITY $(uevent_f);
+  get_event CAPACITY;
 }
 
 is_charging() {
-  if [ "$1" == --ck-current ]; then
-    test $(get_prop POWER_SUPPLY_CURRENT_NOW $(uevent_f)) -le 0;
+  if [ "$1" != --ck-current ]; then
+    get_event STATUS | grep -q '^[Cc]harging$';
   else
-    grep -q '^POWER_SUPPLY_STATUS=[Cc]harging$' $(uevent_f);
+    test $(get_event CURRENT_NOW) -le 0;
   fi;
 }
 
@@ -125,16 +123,17 @@ is_belonging() {
   fi;
 }
 
+is_number() {
+  echo $1 | grep -Eq '^[0-9]+$';
+}
+
 is_bounded() {
   is_belonging $1 1 99;
 }
 
 is_level() {
-  if [ ! $1 -eq $1 ]; then
-    abort "$1 is not a valid number";
-  else
-    is_bounded $1;
-  fi;
+  if (! is_number $1); then abort "$1 is not a number"; fi;
+  is_bounded $1;
 }
 
 write_() {
@@ -156,7 +155,7 @@ write_() {
 
 switch_() {
 
-  if [ ! $1 -eq $1 ]; then
+  if (! is_number $1); then
     case $1 in
       ON)
         inv_stat=OFF;
@@ -169,64 +168,67 @@ switch_() {
     esac;
 
     if (eval $test); then
-      switched=false;
-    elif (! $switched && eval "$test --ck-current"); then
+      switch=true;
+    elif ($switch && eval "$test --ck-current"); then
       write_ $inv_stat;
       sleep 0.3;
     else
-      switched=true;
+      switch=false;
     fi;
-    if (! $switched); then write_ $1; fi;
+    if ($switch); then write_ $1; fi;
 
   else
     get_prop switch_$1;
   fi;
 }
 
+have_daemon() {
+  if (! is_runningd); then abort 'The mcc daemon is not running'; fi;
+}
+
 toggle() {
-  if ($($1)); then
-    val_new=false;
-    stat_new=OFF;
-  else
+  if (! $($1)); then
     val_new=true;
     stat_new=ON;
+
+    have_daemon;
+    reconfigure;
+  else
+    val_new=false;
+    stat_new=OFF;
   fi;
+  print "Toggling $2 $stat_new...";
   set_prop $1 $val_new;
-  print "$2 has been toggled $stat_new";
+  print --done;
 }
 
 charge() {
   case $1 in
-    --enable)
-      key_init=enable;
-      text=enabled;
-    ;;
-    --disable)
-      key_init=disable;
-      text=disabled;
-    ;;
+    --enable)  key_init=enable;  ;;
+    --disable) key_init=disable; ;;
   esac;
+  text=${key_init}d;
 
-  if (! is_runningd); then
-    abort 'The mcc daemon is not running';
-  elif [ $(switch_do) != default ]; then
-    abort 'Another mcc task is already running';
+  have_daemon;
+  if [ $(switch_do) != default ]; then
+    abort 'Another task is already running';
   fi;
 
   reconfigure;
   if (echo $2 | grep -Eq '^[0-9]+%$'); then
 
-    dest_level=$(echo $2 | tr -d %);
+    end_level=$(echo $2 | tr -d %);
 
-    is_bounded $dest_level;
-    print "Charging $text until ${dest_level}%";
+    is_bounded $end_level;
+
+    print "Keep charging $text until ${end_level}%...";
     set_prop switch_do $key_init;
-    while [ $(batt_level) -ne $dest_level ]; do sleep 1; done;
+    while [ $(batt_level) -ne $end_level ]; do sleep 1; done;
 
   elif (echo $2 | grep -Eq '^[0-9]+[smh]?$'); then
 
+    print "Keep charging $text for $2...";
     set_prop switch_do $key_init;
-    print "Charging $text for $2";
     sleep $2;
 
   else
@@ -253,14 +255,14 @@ reconfigure() {
     fi;
   fi;
 
-  for i in 1 2; do set_prop switch_$i dummySwitch; done;
+  print 'Reconfiguring (low level)...';
 
-  print 'Reconfiguring (low_level)...';
+  for i in 1 2; do set_prop switch_$i dummySwitch; done;
   find /sys/devices /sys/module -type f -name uevent >$cache_path;
 
   i=1;
   while read -r main_events; do
-    if (grep -q '^POWER_SUPPLY_NAME=.*[Bb]att.*' $main_events); then
+    if (grep -q '^POWER_SUPPLY_NAME=.*[Bb]att' $main_events); then
       set_prop uevent $main_events;
 
       while read -r chg_events; do
@@ -315,21 +317,20 @@ reconfigure() {
       done <$cache_path;
     fi;
   done <$cache_path;
-  rm $cache_path;
 
-  if [ $i -eq 2 ]; then
-    print --done;
-    print --warn 'A reboot is recommended to prevent conflicts';
-  else
+  if [ $i -eq 1 ]; then
     set_prop uevent dummyEvents;
     abort 'Failed to reconfigure';
+  else
+    print --done;
+    print --warn 'A reboot is recommended to prevent conflicts';
   fi;
   return 0;
 }
 
 if [ "$1" == --force ]; then
-  if ([ "$2" != --switch ] && [ "$2" != --power ]); then
-    abort 'Invalid arguments';
+  if (! echo "$2" | grep -Eq '^(--switch|--power)$'); then
+    abort 'Invalid argument(s)';
   fi;
   enforce=true;
   shift;
@@ -339,9 +340,12 @@ fi;
 
 case $1 in
   --switch)
+    if (echo $# | grep -Eq '^(2|3)$'); then abort 'Invalid argument(s)'; fi;
+
+    print 'Processing/setting thresholds...';
     if [ $# -eq 2 ]; then
 
-      is_level "$2";
+      is_level $2;
       if (! $enforce); then is_belonging $2 20 85; fi;
 
       if [ $2 -ge 25 ]; then
@@ -359,8 +363,8 @@ case $1 in
 
     elif [ $# -eq 3 ]; then
 
-      is_level "$2";
-      is_level "$3";
+      is_level $2;
+      is_level $3;
 
       if [ $2 -le $3 ]; then
         abort "$2 is not > $3";
@@ -369,19 +373,18 @@ case $1 in
         is_belonging $3 15 85;
         if [ $2 -lt $(($3 + 5)) ]; then abort "$2 is too close to $3"; fi;
       fi;
-
-    else
-      abort 'Invalid arguments';
     fi;
+
     set_prop thr_disable $thr_disable $2;
     set_prop thr_enable  $thr_enable  $3;
     print --done;
   ;;
 
   --power)
-    if [ $# -ne 2 ]; then abort 'Invalid arguments'; fi;
+    if [ $# -ne 2 ]; then abort 'Invalid argument(s)'; fi;
 
-    is_level "$2";
+    print 'Processing/setting threshold...';
+    is_level $2;
     if (! $enforce); then is_belonging $2 5 20; fi;
 
     set_prop thr_power $2;
@@ -389,8 +392,9 @@ case $1 in
   ;;
 
   --revert)
-    if [ $# -gt 1 ]; then abort 'Invalid arguments'; fi;
+    if [ $# -gt 1 ]; then abort 'Invalid argument(s)'; fi;
 
+    print 'Reverting thresholds...';
     set_prop thr_disable 80;
     set_prop thr_enable  70;
     set_prop thr_power   20;
@@ -400,63 +404,61 @@ case $1 in
   --toggle)
     shift;
     case $1 in
-      --switch)
-        if (! $(auto_switch)); then
-          if (! is_runningd); then abort 'The mcc daemon is not running'; fi;
-          reconfigure;
-        fi;
-        toggle auto_switch 'Auto Switch';
-      ;;
-      --power)
-        if (! $(auto_power)); then
-          if (! is_runningd); then abort 'The mcc daemon is not running'; fi;
-          reconfigure;
-        fi;
-        toggle auto_power 'Auto Power';
-      ;;
+      --switch) toggle auto_switch 'Auto Switch'; ;;
+      --power)  toggle auto_power  'Auto Power';  ;;
+
       --revert)
-        if (! is_runningd); then abort 'The mcc daemon is not running'; fi;
+        have_daemon;
         reconfigure;
+        print 'Reverting Auto Switch/Power...';
         set_prop auto_switch true;
         set_prop auto_power  true;
         print --done;
       ;;
-      *) abort 'Invalid arguments'; ;;
+      *) abort 'Invalid argument(s)'; ;;
     esac;
   ;;
 
   --enable)
-    if [ $# -ne 2 ]; then abort 'Invalid arguments'; fi;
+    if [ $# -ne 2 ]; then abort 'Invalid argument(s)'; fi;
     charge --enable $2;
   ;;
 
   --disable)
-    if [ $# -ne 2 ]; then abort 'Invalid arguments'; fi;
+    if [ $# -ne 2 ]; then abort 'Invalid argument(s)'; fi;
     charge --disable $2;
   ;;
 
   --cleanup)
+    if [ $# -gt 1 ]; then abort 'Invalid argument(s)'; fi;
+
+    print 'Cleaning...';
     for pid in $(ps | grep -v grep | grep '{mcc}' | grep -v $$ | awk '{ print $1 }'); do
       kill -9 $pid;
     done;
-    rm -f $lock_path;
     set_prop switch_do default;
     print --done;
   ;;
 
   --redaemon)
+    if [ $# -gt 1 ]; then abort 'Invalid argument(s)'; fi;
     if (is_runningd); then abort 'The mcc daemon is already there'; fi;
 
     reconfigure;
+    print 'Launching the mcc daemon...';
     disable_mcc_logs=true mcc --launch-daemon </dev/null >/dev/null 2>&1;
+    sleep 0.5;
     if (! is_runningd); then abort 'Failed to relaunch the daemon'; fi;
     print --done;
   ;;
 
   --launch-daemon)
-    switched=false;
-    revert_ext=false;
-    last_stat=default;
+    switch=true;
+    revert=false;
+    stat_saved=default;
+
+    if [ $# -gt 1 ]; then abort 'Invalid argument(s)'; fi;
+    if (is_runningd); then abort 'Could you rather use [--redaemon] ??'; fi;
 
     while (:); do
       while (! reconfigure --no-action || [ -f $lock_path ]); do
@@ -472,27 +474,27 @@ case $1 in
         default)
           if ($(auto_switch)); then
             if [ $(batt_level) -ge $(thr_disable) ]; then
-              last_stat=OFF;
+              stat_saved=OFF;
               switch_ OFF;
 
             elif [ $(batt_level) -le $(thr_enable) ]; then
-              last_stat=ON;
+              stat_saved=ON;
               switch_ ON;
 
-            elif ($revert_ext); then
-              if [ $last_stat != default ]; then
-                switch_ $last_stat;
-                if ($switched); then revert_ext=false; fi;
+            elif ($revert); then
+              if [ $stat_saved != default ]; then
+                switch_ $stat_saved;
+                if (! $switch); then revert=false; fi;
               fi;
             fi;
           fi;
         ;;
         disable)
-          revert_ext=true;
+          revert=true;
           switch_ OFF;
         ;;
         enable)
-          revert_ext=true;
+          revert=true;
           switch_ ON;
         ;;
       esac;
@@ -501,21 +503,32 @@ case $1 in
   ;;
 
   --restat)
+    if [ $# -gt 1 ]; then abort 'Invalid argument(s)'; fi;
+
+    print 'Resetting batterystats...';
     dumpsys batterystats --reset >/dev/null;
     rm -f /data/system/batterystats.bin;
     print --done;
   ;;
 
-  --reconfig) reconfigure --force; ;;
-
-  --reset)
-    disable_mcc_logs=true mcc --restat >/dev/null;
+  --reconfig)
+    if [ $# -gt 1 ]; then abort 'Invalid argument(s)'; fi;
     reconfigure --force;
   ;;
 
-  --info)
-    reconfigure;
+  --reset)
+    if [ $# -gt 1 ]; then abort 'Invalid argument(s)'; fi;
 
+    print 'Running [--restat] -> [--reconfig]...';
+    disable_mcc_logs=true skip_mcc_detach=true mcc --restat >/dev/null;
+    reconfigure --force >/dev/null;
+    print --done;
+  ;;
+
+  --info)
+    if [ $# -gt 1 ]; then abort 'Invalid argument(s)'; fi;
+
+    reconfigure;
     if (! is_charging); then
       chg_stat='Not charging';
     else
@@ -540,7 +553,7 @@ case $1 in
     echo -e 'Battery Information\n';
 
     echo "- Level : $(batt_level)";
-    echo "- Health: $(get_prop POWER_SUPPLY_HEALTH $(uevent_f))";
+    echo "- Health: $(get_event HEALTH)";
     echo -e "- Status: $chg_stat\n";
 
     echo -e 'Current Settings\n';
@@ -554,12 +567,14 @@ case $1 in
   ;;
 
   --help)
+    if [ $# -gt 1 ]; then abort 'Invalid argument(s)'; fi;
+
     head -n 5   $help_path;
-    head -n 176 $help_path | tail -n 155;
+    head -n 181 $help_path | tail -n 160;
   ;;
 
   *)
-    print --error 'No arguments given';
+    print --error 'Invalid argument(s)';
     disable_mcc_logs=true mcc --help;
   ;;
 esac;

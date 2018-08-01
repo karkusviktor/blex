@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # My Charging Controller
-# mcc Boot 1 (201807271)
+# mcc post-fs-data Script
 # JayminSuthar @ xda-developers
 
 # Copyright (c) 2018 Jaymin Suthar. All rights reserved.
@@ -20,16 +20,22 @@
 
 mcc_dir=${0%/*};
 log_dir=$mcc_dir/log;
-sys_dir=$mcc_dir/system;
+bin_dir=$mcc_dir/system/*bin;
+lock_path=$mcc_dir/lock;
 
-(
 set -x 2>$log_dir/boot.log;
 
-main_path=$(ls $sys_dir/xbin/mcc || ls $sys_dir/bin/mcc);
+set_prop() {
+  sed -i "s|^$1=.*|$1=$2|" $3;
+}
 
-sed -i "s|^mcc_dir=.*|mcc_dir=$mcc_dir;|" $main_path;
-grep -m 1 '^mcc_dir=' $main_path >&2;
-chmod 0600 $main_path;
-touch $mcc_dir/pfsd_done;
+(
+set_prop mcc_dir   $mcc_dir $bin_dir/mcc;
+set_prop switch_do default  $mcc_dir/mcc.conf;
+touch $lock_path;
+
+sleep 120;
+rm $lock_path;
+PATH=$bin_dir:$PATH disable_mcc_logs=true mcc --launch-daemon </dev/null >/dev/null 2>&1;
 
 ) 2>$log_dir/boot_err.log &

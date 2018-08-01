@@ -7,6 +7,7 @@ META-INF/com/google/android/update-binary     text    eol=lf
 module.prop                                   text    eol=lf
 post-fs-data.sh                               text    eol=lf
 README.md                                     text    eol=lf
-service.sh                                    text    eol=lf
 system/etc/init.d/mcc_launcher                text    eol=lf
 system/xbin/mcc                               text    eol=lf
+
+bin/busybox                                   binary

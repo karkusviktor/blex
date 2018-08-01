@@ -1,5 +1,5 @@
 ###### My Charging Controller
-###### mcc README (201807271)
+###### mcc README File
 ###### JayminSuthar @ xda-developers
 
 ###### Copyright (c) 2018 Jaymin Suthar. All rights reserved.
@@ -39,18 +39,23 @@
    OFF the device when the level goes below 'thr_power'. For
    details about other features, check options.
 
+* Auto Switch/Power are ON by default. 'thr_power' is 20 and
+   'thr_disable', 'thr_enable' are 80, 70.
+
 ## Installation
 
 * Flash mcc from recovery or Magisk Manager. mcc will detect
-   and perform a Magisk > system installation.
+   and install in Magisk > system mode. Only arm-based archs
+   are supported. Logs are placed at /dev/mcc_logs.
 
 ## Usage
 
 * Run `mcc [OPTIONS]` from a good terminal (such as Termux).
+* For escalated privileges, terminal must have a root shell.
 
 ## Setup
 
-* Call the [--reconfig] option after every mcc installation.
+* Run the [--reconfig] option after installing/updating mcc.
 
 ## Options
 
@@ -87,8 +92,8 @@
 
 * [--cleanup]
 
--> Kills all mcc processes (including the daemon), and stats
-    are reset for the daemon.
+-> Kills all mcc processes (even the daemon), and resets the
+    daemon.
 
 * [--redaemon]
 
@@ -122,18 +127,18 @@
 * mcc --power 15
 * mcc --force --switch 95 90
 * mcc --force --switch 10
-* mcc --force --power 3
+* mcc --force --power 4
 * mcc --revert
 * mcc --toggle --switch
 * mcc --toggle --power
 * mcc --toggle --revert
 * mcc --enable 60%
 * mcc --enable 120s
-* mcc --enable 30m
+* mcc --enable 20m
 * mcc --enable 2h
-* mcc --disable 25%
+* mcc --disable 20%
 * mcc --disable 30s
-* mcc --disable 45m
+* mcc --disable 40m
 * mcc --disable 1h
 * mcc --cleanup
 * mcc --redaemon
@@ -143,39 +148,63 @@
 * mcc --info
 * mcc --help
 
-## Tips/Misc...
+## Tips/Misc
 
-* mcc recognizes root access and handles calling su for you.
 * If mcc causes a reboot while configuring, create a file at
    /data/adb/skip_mcc_root.
-* The mcc daemon will go to sleep if '$mcc_dir/lock' exists.
+* mcc execution will be blocked if '$mcc_dir/lock' is there,
+   and the daemon will go to sleep.
 * mcc runs in a detached mode, which means you can close the
    terminal afterwards.
+* The mcc daemon handles all the switching, CLI communicates
+   with it for manual methods.
+* All mcc files are stored at MOUNTPOINT/mcc > /data/adb/mcc
+   for Magisk > system mode.
 * mcc disables logging if '$disable_mcc_logs' exists in env.
 
 ## Remember
 
-* The mcc daemon handles all the switching, CLI communicates
-   with it for manual methods.
+* mcc will not run for 120 seconds after each boot (safety).
 * The [--cleanup] option kills the mcc daemon, too. Careful!
 * Resetting batterystats does not work for some old devices.
 
 ## Support
 
 * I try my best to make mcc as good as possible. mcc support
-   is provided at its official XDA support thread.
+   is provided at its official support thread.
 
 ## Credits
 
 * @topjohnwu for creating Magisk.
-* @osm0sis for their BusyBox binaries.
-* Every mcc beta testers :).
+* @osm0sis for their BusyBox binary.
+* Every mcc beta tester :)
 
 ## Encourage Me
 
-* Please hit 'Thanks' if you like my work.
+* Please hit 'Thanks' if you think I deserve one.
 
 ## Release Notes
+
+#### Redefined 1.1
+
+* Fix incorrect daemon status in [--info].
+* Fix control references identification.
+* Fix mounting issues for some devices.
+* Fix 'internal error' for system mode.
+* Fix racial condition with [--reset].
+* Fix boot scripts error logging.
+* Fix BusyBox aborting setup.
+* Fix other minor bugs.
+* Remove unnecessary x86 BusyBox.
+* Remove unnecessary img resizal.
+* Remove late_start boot script.
+* Remove the wrapper around su.
+* Install mcc to xbin for system mode.
+* Use BusyBox for mcc Install script.
+* Add logging to the Install script.
+* Update the behaviour of lock_file.
+* Update strings.
+* Update README.
 
 #### Redefined 1.0.2
 
@@ -187,7 +216,7 @@
 
 * Fix daemon not launching with beta Magisk.
 * Fix control reference nodes never identified.
-   -> This should fix daemon not working and always reconfiguring.
+-> This should fix daemon not working and always reconfiguring.
 * Fix safe boundaries for [--switch/--power].
 * Fix some algotithmic flaws.
 * Update BusyBox to 1.29.1.
