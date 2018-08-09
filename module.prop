@@ -1,7 +1,12 @@
 id=mcc
 name=My Charging Controller
+<<<<<<< HEAD
 version=Redefined 1.1.1
 versionCode=201808091
+=======
+version=Redefined 1.1.1.MR
+versionCode=201808092
+>>>>>>> beta
 author=Jaymin Suthar
 description=Extend batteries' life with fun, let mcc handle this.
 minMagisk=1500

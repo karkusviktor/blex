@@ -41,6 +41,7 @@ print() {
 }
 
 if ! id | grep uid=0 >/dev/null; then
+<<<<<<< HEAD
   abort 'Run `su` first and then mcc'
 elif test ! -d $mcc_dir || test ! -x $bin_dir/awk; then
   abort 'There was an internal error'
@@ -48,6 +49,15 @@ elif test -f $mcc_dir/.lock; then
   echo
   print --error "Due to some safety reasons, you can't execute mcc for"
   print --error '120 seconds after booting, wait softly until then.'
+=======
+  abort 'Please run `su` first and then mcc.'
+elif test ! -d $mcc_dir || test ! -x $bin_dir/awk; then
+  abort 'Internal error occured, please report.'
+elif test -f $mcc_dir/.lock; then
+  echo
+  print --error "Due to some safety reasons, you can't execute mcc for"
+  print --error '120 seconds after booting, please wait until then.'
+>>>>>>> beta
   exit
 fi
 
@@ -123,12 +133,20 @@ is_charging() {
 
 is_belonging() {
   if test $1 -lt $2 || test $1 -gt $3; then
+<<<<<<< HEAD
     abort "$1 does not belong to $2-$3"
+=======
+    abort "$1 does not belong to $2-$3."
+>>>>>>> beta
   fi
 }
 
 is_level() {
+<<<<<<< HEAD
   if ! echo $1 | grep -Eq '^[0-9]+$'; then abort "$1 is not a number"; fi
+=======
+  if ! echo $1 | grep -Eq '^[0-9]+$'; then abort "$1 is not a number."; fi
+>>>>>>> beta
   is_belonging $1 1 99
 }
 
@@ -180,9 +198,15 @@ toggle() {
     stat_new=ON
 
     if ! is_runningd; then
+<<<<<<< HEAD
       abort 'The mcc daemon is not running'
     elif ! reconfigure; then
       abort 'Low level configuration failed'
+=======
+      abort 'The mcc daemon is not running.'
+    elif ! reconfigure; then
+      abort 'Low level configuration failed.'
+>>>>>>> beta
     fi
   fi
   print "Toggling $2 $stat_new"
@@ -198,6 +222,7 @@ charge() {
   text=${key_init}d
 
   if ! is_runningd; then
+<<<<<<< HEAD
     abort 'The mcc daemon is not running'
   elif test $(switch_do) != default; then
     abort 'Another task is already running'
@@ -208,6 +233,18 @@ charge() {
   print --warn 'Manual methods are for advanced users only, without'
   print --warn 'the mathematics regarding battery life, remember it'
   print --warn '(the math) before operating on it.'
+=======
+    abort 'The mcc daemon is not running.'
+  elif test $(switch_do) != default; then
+    abort 'Another task is already running.'
+  elif ! reconfigure; then
+    abort 'Low level configuration failed.'
+  fi
+
+  print --warn 'Manual methods are for advanced users only, without'
+  print --warn 'the math regarding battery life, please remember a'
+  print --warn 'before operating on it.'
+>>>>>>> beta
 
   print 'Parsing argument'
   if echo $2 | grep -Eq '^[0-9]+%$'; then
@@ -234,7 +271,11 @@ charge() {
     sleep $2
 
   else
+<<<<<<< HEAD
     abort "Invalid format: $2"
+=======
+    abort "Invalid format: $2."
+>>>>>>> beta
   fi
   print 'Freeing the daemon'
   set_prop switch_do default
@@ -262,7 +303,11 @@ reconfigure() {
   for i in 1 2; do set_prop switch_$i dummySwitch; done
 
   print --warn 'Configurator requires the device to be charging, is'
+<<<<<<< HEAD
   print --warn 'it charging right now ?? press enter when ready.'
+=======
+  print --warn 'it charging right now ?? Press enter when ready.'
+>>>>>>> beta
   read i
 
   print 'Configuring mcc at kernel/driver level'
@@ -347,11 +392,19 @@ echo
 
 if test "$1" == --force; then
   if ! echo "$2" | grep -Eq '^(--switch|--power)$'; then
+<<<<<<< HEAD
     abort 'Invalid argument(s)'
   fi
   print --warn 'Forcing thresholds outside set boundaries is unsafe'
   print --warn 'and all upto you. mcc did the math, but was skipped'
   print --warn 'by you.'
+=======
+    abort 'Invalid argument(s).'
+  fi
+  print --warn 'Forcing thresholds outside set boundaries is unsafe'
+  print --warn 'and all upto you. mcc did the math, but you skipped'
+  print --warn 'that :('
+>>>>>>> beta
   enforce=true
   shift
 fi
@@ -387,6 +440,7 @@ case $1 in
       is_level $3
 
       if test $2 -le $3; then
+<<<<<<< HEAD
         abort "$2 is not greater than $3"
       elif ! $enforce; then
         is_belonging $2 15 85
@@ -395,6 +449,16 @@ case $1 in
       fi
     else
       abort 'Invalid argument(s)'
+=======
+        abort "$2 is not greater than $3."
+      elif ! $enforce; then
+        is_belonging $2 15 85
+        is_belonging $3 15 85
+        if test $2 -lt $(($3 + 5)); then abort "$2 is too close to $3."; fi
+      fi
+    else
+      abort 'Invalid argument(s).'
+>>>>>>> beta
     fi
 
     print "Updating 'thr_disable', 'thr_enable'"
@@ -404,7 +468,11 @@ case $1 in
   ;;
 
   --power)
+<<<<<<< HEAD
     if test $# -ne 2; then abort 'Invalid argument(s)'; fi
+=======
+    if test $# -ne 2; then abort 'Invalid argument(s).'; fi
+>>>>>>> beta
 
     print 'Validating argument'
     is_level $2
@@ -416,7 +484,11 @@ case $1 in
   ;;
 
   --revert)
+<<<<<<< HEAD
     if test $# -gt 1; then abort 'Invalid argument(s)'; fi
+=======
+    if test $# -gt 1; then abort 'Invalid argument(s).'; fi
+>>>>>>> beta
 
     print 'Reverting Automation thresholds'
     set_prop thr_disable 80
@@ -434,9 +506,15 @@ case $1 in
       --revert)
 
         if ! is_runningd; then
+<<<<<<< HEAD
           abort 'The mcc daemon is not running'
         elif ! reconfigure; then
           abort 'Low level configuration failed'
+=======
+          abort 'The mcc daemon is not running.'
+        elif ! reconfigure; then
+          abort 'Low level configuration failed.'
+>>>>>>> beta
         fi
 
         print 'Reverting Automation features'
@@ -444,21 +522,34 @@ case $1 in
         set_prop auto_power  true
         print --done
       ;;
+<<<<<<< HEAD
       *) abort 'Invalid argument(s)' ;;
+=======
+      *) abort 'Invalid argument(s).' ;;
+>>>>>>> beta
     esac
   ;;
 
   --enable)
+<<<<<<< HEAD
     if test $# -ne 2; then abort 'Invalid argument(s)'; fi
+=======
+    if test $# -ne 2; then abort 'Invalid argument(s).'; fi
+>>>>>>> beta
     charge --enable $2
   ;;
 
   --disable)
+<<<<<<< HEAD
     if test $# -ne 2; then abort 'Invalid argument(s)'; fi
+=======
+    if test $# -ne 2; then abort 'Invalid argument(s).'; fi
+>>>>>>> beta
     charge --disable $2
   ;;
 
   --cleanup)
+<<<<<<< HEAD
     if test $# -gt 1; then abort 'Invalid argument(s)'; fi
 
     print --warn '[--cleanup] kills the mcc daemon, you must start it'
@@ -466,6 +557,15 @@ case $1 in
 
 
     print 'Cleaning up'
+=======
+    if test $# -gt 1; then abort 'Invalid argument(s).'; fi
+
+    print --warn '[--cleanup] kills the mcc daemon, please start that'
+    print --warn 'again manually by [--ckdaemon] afterwards.'
+
+
+    print 'Cleaning up mcc instances'
+>>>>>>> beta
     for pid in $(ps | grep -v grep | grep '{mcc}' | grep -v $$ | awk '{ print $1 }'); do
       kill -9 $pid
     done
@@ -474,18 +574,31 @@ case $1 in
   ;;
 
   --ckdaemon)
+<<<<<<< HEAD
     if test $# -gt 1; then abort 'Invalid argument(s)'; fi
 
     if is_runningd; then
       abort 'The mcc daemon is already there'
     elif ! reconfigure; then
       abort 'Low level configuration failed'
+=======
+    if test $# -gt 1; then abort 'Invalid argument(s).'; fi
+
+    if is_runningd; then
+      abort 'The mcc daemon is already there.'
+    elif ! reconfigure; then
+      abort 'Low level configuration failed.'
+>>>>>>> beta
     fi
 
     print 'Starting the mcc daemon'
     skip_mcc_logs=true mcc --launch-daemon </dev/null >/dev/null 2>&1
     sleep 0.1
+<<<<<<< HEAD
     if ! is_runningd; then abort 'Starting the daemon failed'; fi
+=======
+    if ! is_runningd; then abort 'Starting the daemon failed.'; fi
+>>>>>>> beta
     print --done
   ;;
 
@@ -494,8 +607,13 @@ case $1 in
     revert=false
     stat_saved=default
 
+<<<<<<< HEAD
     if test $# -gt 1; then abort 'Invalid argument(s)'; fi
     if is_runningd; then abort 'Another daemon instance already exists'; fi
+=======
+    if test $# -gt 1; then abort 'Invalid argument(s).'; fi
+    if is_runningd; then abort 'Another daemon instance already exists.'; fi
+>>>>>>> beta
 
     while true; do
       while ! reconfigure --no-action; do sleep 0.1; done
@@ -540,9 +658,15 @@ case $1 in
   ;;
 
   --restat)
+<<<<<<< HEAD
     if test $# -gt 1; then abort 'Invalid argument(s)'; fi
 
     print --warn '[--restat] might not work for all devices.'
+=======
+    if test $# -gt 1; then abort 'Invalid argument(s).'; fi
+
+    print --warn '[--restat] might not work for all devices :('
+>>>>>>> beta
 
     print 'Resetting batterystats'
     dumpsys batterystats --reset >/dev/null
@@ -551,6 +675,7 @@ case $1 in
   ;;
 
   --config)
+<<<<<<< HEAD
     if test $# -gt 1; then abort 'Invalid argument(s)'; fi
     if ! reconfigure --force; then abort 'Low level configuration failed'; fi
   ;;
@@ -560,13 +685,30 @@ case $1 in
 
     skip_mcc_logs=true skip_mcc_detach=true mcc --restat
     if ! reconfigure --force; then abort 'Low level configuration failed'; fi
+=======
+    if test $# -gt 1; then abort 'Invalid argument(s).'; fi
+    if ! reconfigure --force; then abort 'Low level configuration failed.'; fi
+  ;;
+
+  --reset)
+    if test $# -gt 1; then abort 'Invalid argument(s).'; fi
+
+    skip_mcc_logs=true skip_mcc_detach=true mcc --restat
+    if ! reconfigure --force; then abort 'Low level configuration failed.'; fi
+>>>>>>> beta
     print --done
   ;;
 
   --info)
+<<<<<<< HEAD
     if test $# -gt 1; then abort 'Invalid argument(s)'; fi
 
     if ! reconfigure; then abort 'Low level configuration failed'; fi
+=======
+    if test $# -gt 1; then abort 'Invalid argument(s).'; fi
+
+    if ! reconfigure; then abort 'Low level configuration failed.'; fi
+>>>>>>> beta
     if ! is_charging; then
       chg_stat='Not charging'
     else
@@ -605,14 +747,22 @@ case $1 in
   ;;
 
   --help)
+<<<<<<< HEAD
     if test $# -gt 1; then abort 'Invalid argument(s)'; fi
+=======
+    if test $# -gt 1; then abort 'Invalid argument(s).'; fi
+>>>>>>> beta
 
     head -n 4   $help_path
     head -n 197 $help_path | tail -n 177
   ;;
 
   *)
+<<<<<<< HEAD
     print --error 'No valid argument supplied, let mcc help a little'
+=======
+    print --error 'No valid argument supplied, let mcc help out a bit...'
+>>>>>>> beta
     skip_mcc_logs=true mcc --help
   ;;
 esac

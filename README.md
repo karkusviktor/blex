@@ -52,7 +52,11 @@
 * Other features provided include resetting batterystats and
    manual methods. Resetting stats is a common practice that
    parts into recalibrating the battery. But, manual methods
+<<<<<<< HEAD
    do not have a specific purpose. You can find many uses of
+=======
+   do not have a specific purpose. You may find many uses of
+>>>>>>> beta
    them while playing soccer. They basically allow to enable
    or disable charging on demand until some level is reached
    or some time has passed. They do not have an mcc wrapper!
@@ -81,11 +85,18 @@
 ## Usage
 
 * Open a new terminal window and run `su` to gain root. Then
+<<<<<<< HEAD
    run mcc with proper arguments (check 'Arguments'). You're
    allowed to close the window afterwards since mcc detaches
    from the terminal. '$mod_dir/log/main.log' will have logs
    for the last mcc call. If you don't need them, a directly
    assigned 'skip_mcc_logs=true' does the trick.
+=======
+   run mcc with proper arguments (see 'Arguments'). Then you
+   might close the window since mcc always runs asynchronous
+   (in background, detached from the terminal). Log files of
+   boot and runtime are saved in '$mcc_dir/log' directory.
+>>>>>>> beta
 
 ## Arguments
 
@@ -198,6 +209,14 @@
 
 ## Changelog
 
+<<<<<<< HEAD
+=======
+#### Redefined 1.1.1.MR
+
+* Fix unzipping error.
+* Update strings.
+
+>>>>>>> beta
 #### Redefined 1.1.1
 
 * I'm currently porting this project Shell -> native "C". No
