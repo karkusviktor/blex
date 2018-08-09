@@ -1,7 +1,7 @@
 id=mcc
 name=My Charging Controller
-version=Redefined 1.1.1
-versionCode=201808091
+version=Redefined 1.1.2
+versionCode=201808092
 author=Jaymin Suthar
 description=Extend batteries' life with fun, let mcc handle this.
 minMagisk=1500

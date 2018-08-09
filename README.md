@@ -52,7 +52,7 @@
 * Other features provided include resetting batterystats and
    manual methods. Resetting stats is a common practice that
    parts into recalibrating the battery. But, manual methods
-   do not have a specific purpose. You can find many uses of
+   do not have a specific purpose. You may find many uses of
    them while playing soccer. They basically allow to enable
    or disable charging on demand until some level is reached
    or some time has passed. They do not have an mcc wrapper!
@@ -81,11 +81,10 @@
 ## Usage
 
 * Open a new terminal window and run `su` to gain root. Then
-   run mcc with proper arguments (check 'Arguments'). You're
-   allowed to close the window afterwards since mcc detaches
-   from the terminal. '$mod_dir/log/main.log' will have logs
-   for the last mcc call. If you don't need them, a directly
-   assigned 'skip_mcc_logs=true' does the trick.
+   run mcc with proper arguments (see 'Arguments'). Then you
+   might close the window since mcc always runs asynchronous
+   (in background, detached from the terminal). Log files of
+   boot and runtime are saved in '$mcc_dir/log' directory.
 
 ## Arguments
 
@@ -182,13 +181,13 @@
 
 ## Support
 
-* If your device reboots while configuring, reboot to system
-   and try again (this is a workaround). If the device still
-   reboots, or you're facing any other bugs/issues, I advise
-   to visit the 'Support Thread' (see links). Describe it as
-   widely as you can, also provide any relevant logs. And if
-   you wish to support my efforts, don't hesitate to 'Thank'
-   me on the thread.
+* If your device reboots while configuring, reboot and do it
+   again to enable skip_root workaround. If that persists or
+   you have any other bugs/issues, please visit the official
+   'Support Thread' (see links). You should describe widely,
+   provide relevant logs and mention me (just in case). This
+   project is a result of my free time, please 'Thank' me if
+   it helps you.
 
 ## Credits
 
@@ -197,6 +196,11 @@
 * Every mcc beta tester :)
 
 ## Changelog
+
+#### Redefined 1.1.2
+
+* Fix unzipping error.
+* Update strings.
 
 #### Redefined 1.1.1
 

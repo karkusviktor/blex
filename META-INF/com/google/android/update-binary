@@ -79,7 +79,7 @@ print() {
 }
 
 cleanup() {
-  print 'Cleaning'
+  print 'Cleaning up temp'
 
   if test "$1" == --error; then rm -r $mcc_dir $mcc_path $init_path; fi
   if umount $mount_dir; then losetup -d $loop_path; fi
@@ -98,7 +98,7 @@ is_mounted() {
 
 mount_wrap() {
   if ! mount -t auto -o $rw /$1; then
-    if ! mount -t auto -o $rw,remount /$1; then abort "Mounting /$1 failed"; fi
+    if ! mount -t auto -o $rw,remount /$1; then abort "Mounting /$1 failed."; fi
   fi
 }
 
@@ -147,19 +147,20 @@ ui_print '   Copyright (c) 2018 Jaymin Suthar. All rights reserved.   '
 ui_print '************************************************************'
 ui_print ' '
 
-print 'Building environment'
+print 'Building common environment'
 
+mkdir -p $zip_dir
 unzip -o "$3" -d $zip_dir >/dev/null
 if ! chmod 0755 $bin_path; then
-  abort 'Unzipping files failed'
+  abort 'Unzipping files failed.'
 elif ! $bin_path --install $bb_dir/; then
-  abort 'Chipset not supported'
+  abort 'Chipset is not supported.'
 fi
 export PATH=$bb_dir:$PATH
 
-print 'Checking systemless support'
+print 'Checking for systemless support'
 if ! is_mounted /data; then
-  if ! mount /data; then abort 'Mounting /data failed'; fi
+  if ! mount /data; then abort 'Mounting /data failed.'; fi
 fi
 if test -d $adb_dir/magisk; then
   rw=ro
@@ -176,7 +177,7 @@ else
   ui_print ' '
 fi
 
-print 'Mounting partitions'
+print 'Mounting required partitions'
 mount_wrap system
 if test -f /system/init.rc; then system=/system/system; fi
 if test -L $system/vendor; then mount_wrap vendor; fi
@@ -202,13 +203,13 @@ if $system_mode; then
   if test ! -d $init_dir; then
     print --info 'Your device lacks init.d support, I recommend that you'
     print --info 'try out Init.d Injector by @Zackptg5. This tool can be'
-    print --info 'found at XDA, search the forums.'
-    abort 'init.d support not detected'
+    print --info 'found at XDA, search the forums :)'
+    abort 'init.d support not detected.'
   fi
 
-  print --info 'Install start (system)'
+  print --info 'Install started (system).'
 
-  print 'Initializing files/paths'
+  print 'Initializing files and paths'
   mv $cfg_path $tmp_dir/
   rm -r $mcc_dir
   mkdir -p $doc_dir $bin_dir $mcc_dir/log
@@ -221,13 +222,13 @@ if $system_mode; then
 
   restore_cfg
 
-  print 'Setting permissions'
+  print 'Setting permissions of files'
   set_perm_recursive $mcc_dir   0 0    0700 0600 u:object_r:adb_data_file:s0
   set_perm           $bb_path   0 2000 0710      u:object_r:adb_data_file:s0
   set_perm           $mcc_path  0 2000 0755
   set_perm           $init_path 0 0    0755
 
-  print 'Finalizing install'
+  print 'Giving a final touch'
   $bb_path --install $bin_dir/
 
 else
@@ -245,14 +246,14 @@ else
   if test ! -d $system/xbin; then xbin_dir=${xbin_dir%/*}/bin; fi
 
   if test ! -f $img_path; then
-    print "Creating $img_path"
+    print "Creating a 64M $img_path"
     if ! make_ext4fs -l 64M $img_path >/dev/null; then
       $system/bin/mke2fs -t ext4 $img_path 64M >/dev/null
     fi
   fi
 
   mkdir $mount_dir
-  print "Mounting $img_path to temp"
+  print "Mounting $img_path to $mount_dir"
   for minor in 0 1 2 3 4 5 6 7; do
     loop_path=/dev/block/loop$minor
 
@@ -261,11 +262,11 @@ else
       if mount -t ext4 -o loop $loop_path $mount_dir; then break; fi
     fi
   done
-  if ! is_mounted $mount_dir; then abort 'Mounting image failed'; fi
+  if ! is_mounted $mount_dir; then abort 'Mounting image failed.'; fi
 
-  print --info 'Install start (systemless)'
+  print --info 'Install started (systemless).'
 
-  print 'Initializing files/paths'
+  print 'Initializing files and paths'
   if $boot_mode; then
     cp $mcc_dir_live/mcc.conf $tmp_dir/
   else
@@ -282,12 +283,12 @@ else
 
   restore_cfg
 
-  print 'Setting permissions'
+  print 'Setting permissions of files'
   set_perm_recursive $mcc_dir  0 0    0755 0644
   set_perm_recursive $xbin_dir 0 2000 0755 0755
   set_perm           $bb_path  0 2000 0755
 
-  print 'Finalizing install'
+  print 'Giving a final touch'
   touch $mcc_dir/auto_mount
   if $boot_mode; then
     mkdir $mcc_dir_live
@@ -298,8 +299,8 @@ else
 fi
 
 cleanup
-print --warn 'Done installing. After rebooting, you must call the'
-print --warn 'configurator by `mcc --config` to configure mcc. If'
-print --warn 'not, mcc will not work!'
+print --warn 'mcc is installed! After rebooting, please configure'
+print --warn 'it by calling the configurator with `mcc --config`.'
+print --warn 'Otherwise, mcc will not work!'
 print --done
 exit 0
