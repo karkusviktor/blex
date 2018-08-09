@@ -1,4 +1,4 @@
-# Please make sure to edit all files with Unix line endings.
+# Make sure all files end with Unix line endings (LF).
 
 COPYING                                       text    eol=lf
 mcc.conf                                      text    eol=lf

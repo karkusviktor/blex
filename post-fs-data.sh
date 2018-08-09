@@ -1,6 +1,5 @@
 #!/system/bin/sh
 # My Charging Controller
-# mcc post-fs-data Script
 # JayminSuthar @ xda-developers
 
 # Copyright (c) 2018 Jaymin Suthar. All rights reserved.
@@ -18,24 +17,24 @@
 # You should already have received a copy of GPLv3 with mcc,
 ## if not, see <http://www.gnu.org/licenses/>.
 
-mcc_dir=${0%/*};
-log_dir=$mcc_dir/log;
-bin_dir=$mcc_dir/system/*bin;
-lock_path=$mcc_dir/lock;
+mcc_dir=${0%/*}
+bin_dir=$mcc_dir/system/xbin
+lock_path=$mcc_dir/.lock
 
-set -x 2>$log_dir/boot.log;
+umask 022
+exec 2>$mcc_dir/log/boot.log
+set -x
+
+if test ! -d $bin_dir; then bin_dir=${bin_dir%/*}/bin; fi
 
 set_prop() {
-  sed -i "s|^$1=.*|$1=$2|" $3;
+  sed -i "s|^$1=.*|$1=$2|" $3
 }
 
-(
-set_prop mcc_dir   $mcc_dir $bin_dir/mcc;
-set_prop switch_do default  $mcc_dir/mcc.conf;
-touch $lock_path;
+set_prop mcc_dir   $mcc_dir $bin_dir/mcc
+set_prop switch_do default  $mcc_dir/mcc.conf
+touch $lock_path
 
-sleep 120;
-rm $lock_path;
-PATH=$bin_dir:$PATH disable_mcc_logs=true mcc --launch-daemon </dev/null >/dev/null 2>&1;
-
-) 2>$log_dir/boot_err.log &
+sleep 120
+rm $lock_path
+PATH=$bin_dir:/sbin:/system/xbin:/system/bin:/vendor/bin skip_mcc_logs=true mcc --launch-daemon </dev/null >/dev/null 2>&1

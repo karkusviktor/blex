@@ -1,5 +1,4 @@
 ###### My Charging Controller
-###### mcc README File
 ###### JayminSuthar @ xda-developers
 
 ###### Copyright (c) 2018 Jaymin Suthar. All rights reserved.
@@ -26,99 +25,132 @@
 
 ## Introduction
 
-* #### mcc lies around controlling charging in a better way.
+* #### Extend batteries' life with fun, let mcc handle this.
 
 ## Description
 
-* mcc provides Automated and Manual methods. Auto Switch and
-   Auto Power are part of the automation, whereas [--restat]
-   and [--enable/--disable] are manual methods. Others there
-   are extensions for both these. Auto Switch makes charging
-   to stop when battery level exceeds 'thr_disable', and re-
-   start when it falls below 'thr_enable'. Auto Power powers
-   OFF the device when the level goes below 'thr_power'. For
-   details about other features, check options.
+* mcc exists because of the chemistry/mathematics of lithium
+   batteries. They are fun in the way they work, and mcc was
+   programmed to make the fun give out gold. mcc wraps every
+   little thing (unless noted) to keep it from any flaws one
+   might ever face. You can bypass them though.
 
-* Auto Switch/Power are ON by default. 'thr_power' is 20 and
-   'thr_disable', 'thr_enable' are 80, 70.
+* mcc provides you a great Automation for the purpose. It'll
+   start a daemon every time the device boots, which handles
+   all these. It provides 1) Auto Switch, 2) Auto Power. The
+   latter powers the device OFF when battery level's below a
+   specified 'thr_power', so the battery does not drain much
+   that it needs a lot of volts. The first, that switches ON
+   and OFF charging maintaing a cycle which never quits it's
+   boundaries for the sake of the batteries' life. This does
+   a massive help in maintaining battery health/performance.
+   Charging's disabled when 'thr_disable' is hit and enabled
+   back when 'thr_enable' is hit. It also gains us a massive
+   cutout in total charge cycles as counted against possible
+   available lifecycles.
+
+* Other features provided include resetting batterystats and
+   manual methods. Resetting stats is a common practice that
+   parts into recalibrating the battery. But, manual methods
+   do not have a specific purpose. You can find many uses of
+   them while playing soccer. They basically allow to enable
+   or disable charging on demand until some level is reached
+   or some time has passed. They do not have an mcc wrapper!
+   Every other option you see, is an utility for mcc.
+
+* Automation is enabled by default with optimal thresholds I
+   think. 'thr_disable', 'thr_enable' and 'thr_power' are as
+   80, 70 and 20.
+
+## Requirements
+
+* An arm-based chipset.
+* Magisk v14.6+ for systemless mode.
+* Any root solution if system mode.
+* init.d support for system mode.
+* Basic terminal/CLI knowledge.
 
 ## Installation
 
-* Flash mcc from recovery or Magisk Manager. mcc will detect
-   and install in Magisk > system mode. Only arm-based archs
-   are supported. Logs are placed at /dev/mcc_logs.
+* Flash the zip from recovery or Manager. The installer will
+   do the job prioritizing systemless mode over system mode.
+   Installation logs will be placed at /dev/mcc_install.log.
+   mcc files will be saved in magisk.img if systemless mode,
+   else in /data/adb/mcc.
 
 ## Usage
 
-* Run `mcc [OPTIONS]` from a good terminal (such as Termux).
-* For escalated privileges, terminal must have a root shell.
+* Open a new terminal window and run `su` to gain root. Then
+   run mcc with proper arguments (check 'Arguments'). You're
+   allowed to close the window afterwards since mcc detaches
+   from the terminal. '$mod_dir/log/main.log' will have logs
+   for the last mcc call. If you don't need them, a directly
+   assigned 'skip_mcc_logs=true' does the trick.
 
-## Setup
+## Arguments
 
-* Run the [--reconfig] option after installing/updating mcc.
+    [--switch] [thr_disable] [thr_enable]
 
-## Options
+    -> Update 'thr_disable', 'thr_enable' from arguments and
+    figure out 'the_enable' if not given.
 
-* [--switch] [thr_disable] [thr_enable]
+    [--power] [thr_power]
 
--> Sets Auto Switch thresholds to thr_disable, thr_enable. A
-    good thing suggests thr_enable to be optional.
+    -> Update 'thr_power' to the specified value.
 
-* [--power] [thr_power]
+    [--force] [--switch/--power] ...
 
--> Sets Auto Power threshold to thr_power.
+    -> Forcibly update Automation thresholds.
 
-* [--force] [--switch/--power] ...
+    [--revert]
 
--> Sets Auto Switch/Power thresholds ignoring all the tests.
+    -> Revert Automation thresholds to their defaults.
 
-* [--revert]
+    [--toggle] [--switch/--power/--revert]
 
--> Reverts Auto (daemon) thresholds to their defaults.
+    -> Toggle Automation features ON/OFF, [--revert] reverts
+    both to their defaults.
 
-* [--toggle] [--switch/--power/--revert]
+    [--enable] [level/time]
 
--> Toggles Auto Switch/Power ON/OFF, [--revert] reverts both
-    to their defaults.
+    -> Enable charging until specified level has been hit or
+    time has passed.
+    -> Formats allowed: {level}%, {time}s, {time}m, {time}h.
 
-* [--enable] [level/time]
+    [--disable] [level/time]
 
--> Enables charging for given time or until some batt_level.
--> Accepted formats: {level}%, {time}s, {time}m, or {time}h.
+    -> Same as above, except for charging is disabled.
 
-* [--disable] [level/time]
+    NOTE: [--enable/--disable] are manual methods, so do not
+    provide any safety checks.
 
--> Same as above, except for charging is disabled.
+    [--cleanup]
 
-* [--cleanup]
+    -> Kill all mcc processes (including the daemon).
 
--> Kills all mcc processes (even the daemon), and resets the
-    daemon.
+    [--ckdaemon]
 
-* [--redaemon]
+    -> Check the mcc daemon, and start if not running.
 
--> Relaunches the mcc daemon unless already running.
+    [--restat]
 
-* [--restat]
+    -> Reset battery statistics.
 
--> Resets battery statistics.
+    [--config]
 
-* [--reconfig]
+    -> Configure mcc at lower level, requires charging ON.
 
--> Reconfigures mcc at lower level, requiring charging ON.
+    [--reset]
 
-* [--reset]
+    -> Reset batterystats and configure mcc.
 
--> Runs [--restat] and [--reconfig] one after one.
+    [--info]
 
-* [--info]
+    -> Print some information.
 
--> Shows details about current battery stats, mcc config and
-    daemon status.
+    [--help]
 
-* [--help]
-
--> Shows the current README page.
+    -> Show this help page.
 
 ## Examples
 
@@ -141,37 +173,22 @@
 * mcc --disable 40m
 * mcc --disable 1h
 * mcc --cleanup
-* mcc --redaemon
+* mcc --ckdaemon
 * mcc --restat
-* mcc --reconfig
+* mcc --config
 * mcc --reset
 * mcc --info
 * mcc --help
 
-## Tips/Misc
-
-* If mcc causes a reboot while configuring, create a file at
-   /data/adb/skip_mcc_root.
-* mcc execution will be blocked if '$mcc_dir/lock' is there,
-   and the daemon will go to sleep.
-* mcc runs in a detached mode, which means you can close the
-   terminal afterwards.
-* The mcc daemon handles all the switching, CLI communicates
-   with it for manual methods.
-* All mcc files are stored at MOUNTPOINT/mcc > /data/adb/mcc
-   for Magisk > system mode.
-* mcc disables logging if '$disable_mcc_logs' exists in env.
-
-## Remember
-
-* mcc will not run for 120 seconds after each boot (safety).
-* The [--cleanup] option kills the mcc daemon, too. Careful!
-* Resetting batterystats does not work for some old devices.
-
 ## Support
 
-* I try my best to make mcc as good as possible. mcc support
-   is provided at its official support thread.
+* If your device reboots while configuring, reboot to system
+   and try again (this is a workaround). If the device still
+   reboots, or you're facing any other bugs/issues, I advise
+   to visit the 'Support Thread' (see links). Describe it as
+   widely as you can, also provide any relevant logs. And if
+   you wish to support my efforts, don't hesitate to 'Thank'
+   me on the thread.
 
 ## Credits
 
@@ -179,54 +196,32 @@
 * @osm0sis for their BusyBox binary.
 * Every mcc beta tester :)
 
-## Encourage Me
+## Changelog
 
-* Please hit 'Thanks' if you think I deserve one.
+#### Redefined 1.1.1
 
-## Release Notes
+* I'm currently porting this project Shell -> native "C". No
+   feature builds, will be released for the shell version of
+   it. Only bugfixes! Keep reporting please.
+* In case you're interested, porting to "C" will allow it to
+   function even without a root solution, though requiring a
+   custom recovery. Also executions will be hell-lot-of fast
+   and much less resource heavy (current: 7MB).
 
-#### Redefined 1.1
-
-* Fix incorrect daemon status in [--info].
-* Fix control references identification.
-* Fix mounting issues for some devices.
-* Fix 'internal error' for system mode.
-* Fix racial condition with [--reset].
-* Fix boot scripts error logging.
-* Fix BusyBox aborting setup.
-* Fix other minor bugs.
-* Remove unnecessary x86 BusyBox.
-* Remove unnecessary img resizal.
-* Remove late_start boot script.
-* Remove the wrapper around su.
-* Install mcc to xbin for system mode.
-* Use BusyBox for mcc Install script.
-* Add logging to the Install script.
-* Update the behaviour of lock_file.
-* Update strings.
-* Update README.
-
-#### Redefined 1.0.2
-
-* Fix the daemon not writing control nodes.
-* Internal code improvements.
-* Update README.
-
-#### Redefined 1.0.1
-
-* Fix daemon not launching with beta Magisk.
-* Fix control reference nodes never identified.
--> This should fix daemon not working and always reconfiguring.
-* Fix safe boundaries for [--switch/--power].
-* Fix some algotithmic flaws.
-* Update BusyBox to 1.29.1.
-* Update strings.
-
-#### Redefined 1.0.MR
-
-* Fix a few bugs with BusyBox and UI.
-* Update README for public release.
-
-#### Redefined 1.0
-
-* Initial redefined release.
+* Fix the daemon incorrectly reverting the switch.
+* Fix boot script not launching the daemon.
+* Fix Install script aborting in recovery.
+* Fix A/B slot detection for some devices.
+* Fix permissions for generated files.
+* Fix read-only filesystem errors.
+* Fix lost BusyBox applet links.
+* Fix other bugs I discovered.
+* Automatically implement skip_root workaround.
+* Improvements (logging, daemon, algorithms).
+* Remove Magisk versionCode checking.
+* Remove separate error log_files.
+* Remove lock file feature.
+* Update BusyBox to 1.29.2.
+* Update documentation.
+* Update arguments.
+* Update UI.

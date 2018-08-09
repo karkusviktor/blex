@@ -1,6 +1,5 @@
 #!/sbin/sh
 # My Charging Controller
-# mcc Install Script
 # JayminSuthar @ xda-developers
 
 # Copyright (c) 2018 Jaymin Suthar. All rights reserved.
@@ -18,308 +17,289 @@
 # You should already have received a copy of GPLv3 with mcc,
 ## if not, see <http://www.gnu.org/licenses/>.
 
-out_fd=$2;
-boot_mode=false;
-system=/system;
-tmp_dir=/dev/mcc_$$;
-log_dir=$tmp_dir/log;
-zip_dir=$tmp_dir/zip;
-bin_dir=$zip_dir/bin;
-sys_dir=$zip_dir/system;
-bb_path=$bin_dir/busybox;
-cfg_path=$zip_dir/mcc.conf;
-copy_path=$zip_dir/COPYING;
-help_path=$zip_dir/README.md;
+out_fd=$2
+boot_mode=false
+system=/system
+system_mode=false
+adb_dir=/data/adb
+tmp_dir=/dev/mcc_$$
+zip_dir=$tmp_dir/zip
+bb_dir=$zip_dir/bin
+sys_dir=$zip_dir/system
+bin_path=$bb_dir/busybox
+copy_path=$zip_dir/COPYING
+help_path=$zip_dir/README.md
+conf_path=$zip_dir/mcc.conf
 
-umask 022;
-mkdir -p $log_dir;
-if [ "$1" != --skip-errors ]; then
-  exec $0 --skip-errors $2 "$3" 2>$log_dir/install_err.log;
-fi;
-set -x 2>$log_dir/install.log;
+umask 022
+exec 2>/dev/mcc_install.log
+set -x
 
-if (! echo "$(ps -A || ps)" | grep -v grep | grep zygote >/dev/null); then
-  mount -o bind /dev/urandom /dev/random;
-  fd_dir=/proc/$$/fd;
-  if (readlink $fd_dir/$out_fd | grep /tmp >/dev/null); then
-    for fd in $fd_dir/*; do
-      if (readlink $fd | grep pipe >/dev/null); then
-        fd=${fd##*/};
-        if (ps | grep -v grep | grep " 3 $fd " >/dev/null); then
-          out_fd=$fd;
-          break;
-        fi;
-      fi;
-    done;
-  fi;
+if echo "$(ps -A || ps)" | grep -v grep | grep zygote >/dev/null; then
+  boot_mode=true
 else
-  boot_mode=true;
-fi;
+  mount -o bind /dev/urandom /dev/random
+  fd_dir=/proc/$$/fd
+  if readlink $fd_dir/$2 | grep /tmp >/dev/null; then
+    for fd in $fd_dir/*; do
+      if readlink $fd | grep pipe >/dev/null; then
+        fd=${fd##*/}
+        if ps | grep -v grep | grep " 3 $fd " >/dev/null; then
+          out_fd=$fd
+          break
+        fi
+      fi
+    done
+  fi
+fi
 
 ui_print() {
-  if (! $boot_mode); then
-    echo -e "ui_print $1\nui_print" >>/proc/self/fd/$out_fd;
+  if ! $boot_mode; then
+    echo -e "ui_print $1\nui_print" >>/proc/self/fd/$out_fd
   else
-    echo "$1";
-  fi;
+    echo "$1"
+  fi
 }
 
 abort() {
-  ui_print ' ';
-  print --error "$1";
-  cleanup --error;
-  exit 1;
+  ui_print ' '
+  print --error "$1"
+  cleanup --error
+  exit 1
 }
 
 print() {
   case "$1" in
-    --error) ui_print "FATAL ERROR: $2"; ;;
-    --done)  ui_print '- Done';          ;;
-    *)       ui_print "INFO: $1";        ;;
-  esac;
+    --done)  ui_print '- Done'      ;;
+    --error) ui_print "ERROR: $2"   ;;
+    --warn)  ui_print "WARNING: $2" ;;
+    --info)  ui_print "INFO: $2"    ;;
+    *)       ui_print "- $1"        ;;
+  esac
 }
 
 cleanup() {
-  log_dir_final=/dev/mcc_logs;
+  print 'Cleaning'
 
-  if [ "$1" == --error ]; then rm -r $mcc_dir $main_path $init_path; fi;
-  if (umount $mount_dir); then losetup -d $loop_path; fi;
-  rm -r $tmp_dir;
+  if test "$1" == --error; then rm -r $mcc_dir $mcc_path $init_path; fi
+  if umount $mount_dir; then losetup -d $loop_path; fi
+  rm -r $tmp_dir
 
-  if (! $boot_mode); then
-    for mounted in /data /system /vendor /dev/random; do
-      umount -l $mounted;
-    done;
-  fi;
-  mkdir $log_dir_final;
-  cp -rf $log_dir/. $log_dir_final/;
+  if ! $boot_mode; then
+    for mountpoint in /data /system /vendor /dev/random; do
+      umount -l $mountpoint
+    done
+  fi
 }
 
 is_mounted() {
-  grep -q " $1 " /proc/mounts;
+  mount | grep -q " $1 "
 }
 
-mount_for_ab() {
-
-  if (is_mounted /$1); then return; fi;
-
-  device_path=$(find /dev/block -iname $1$slot | head -n 1);
-  device_path=$(readlink $device_path || echo $device_path);
-
-  if (! mount -t auto -o ro $device_path /$1); then
-    abort "Failed to mount /$1";
-  fi;
+mount_wrap() {
+  if ! mount -t auto -o $rw /$1; then
+    if ! mount -t auto -o $rw,remount /$1; then abort "Mounting /$1 failed"; fi
+  fi
 }
 
 get_prop() {
-  sed -n "s/^$1=//p" $2;
+  sed -n "s/^$1=//p" $2
 }
 
 set_prop() {
-  sed -i "s|^$1=.*|$1=$2|" $3;
+  sed -i "s/^$1=.*/$1=$2/" $3
 }
 
 set_perm() {
-  chown $2:$3 $1;
-  chmod $4 $1;
-  if [ -z "$5" ]; then
-    chcon u:object_r:system_file:s0 $1;
+  chown $2:$3 $1
+  chmod $4 $1
+  if test -z "$5"; then
+    chcon u:object_r:system_file:s0 $1
   else
-    chcon $5 $1;
-  fi;
+    chcon $5 $1
+  fi
 }
 
 set_perm_recursive() {
   find $1 | while read -r entry; do
-    if [ -d $entry ]; then
-      set_perm $entry $2 $3 $4 $6;
+    if test -d $entry; then
+      set_perm $entry $2 $3 $4 $6
     else
-      set_perm $entry $2 $3 $5 $6;
-    fi;
-  done;
+      set_perm $entry $2 $3 $5 $6
+    fi
+  done
 }
 
 restore_cfg() {
   if cfg_path_bak=$(ls $tmp_dir/mcc.conf); then
+    print 'Migrating configs backup'
     for prop in auto_switch auto_power thr_disable thr_enable thr_power; do
-      set_prop $prop $(get_prop $prop $cfg_path_bak) $cfg_path_mcc;
-    done;
-  fi;
+      set_prop $prop $(get_prop $prop $cfg_path_bak) $cfg_path
+    done
+  fi
 }
 
-warn_for_system_install() {
-  magisk_mode=false;
+ui_print ' '
+ui_print '************************************************************'
+ui_print '                My Charging Controller (mcc)                '
+ui_print '************************************************************'
+ui_print '   Copyright (c) 2018 Jaymin Suthar. All rights reserved.   '
+ui_print '************************************************************'
+ui_print ' '
 
-  ui_print ' ';
-  ui_print '************************************************************';
-  ui_print '            Failed to detect support for Magisk             ';
-  ui_print '************************************************************';
-  ui_print ' ';
-}
+print 'Building environment'
 
-ui_print ' ';
-ui_print '************************************************************';
-ui_print '                  My Charging Controller                    ';
-ui_print '************************************************************';
-ui_print ' ';
+unzip -o "$3" -d $zip_dir >/dev/null
+if ! chmod 0755 $bin_path; then
+  abort 'Unzipping files failed'
+elif ! $bin_path --install $bb_dir/; then
+  abort 'Chipset not supported'
+fi
+export PATH=$bb_dir:$PATH
 
-print 'Unzipping files...';
-unzip -o "$3" '*' -d $zip_dir >/dev/null;
-if [ ! -f $bb_path ]; then abort 'Failed to unzip files'; fi;
+print 'Checking systemless support'
+if ! is_mounted /data; then
+  if ! mount /data; then abort 'Mounting /data failed'; fi
+fi
+if test -d $adb_dir/magisk; then
+  rw=ro
+else
+  rw=rw
+  system_mode=true
 
-print 'Preparing environment, mounts...';
+  ui_print ' '
+  ui_print '************************************************************'
+  ui_print '         Systemless interface (Magisk) not detected         '
+  ui_print '************************************************************'
+  ui_print '        mcc will install in system mode, mount rw :(        '
+  ui_print '************************************************************'
+  ui_print ' '
+fi
 
-chmod 0755 $bb_path;
-if (! $bb_path --install $bin_dir/); then
-  abort 'Only arm-based CPUs are supported';
-fi;
-export PATH=$bin_dir:$PATH;
+print 'Mounting partitions'
+mount_wrap system
+if test -f /system/init.rc; then system=/system/system; fi
+if test -L $system/vendor; then mount_wrap vendor; fi
 
-if ! slot=$(get_prop androidboot.slot_suffix /proc/cmdline); then
-  if slot=$(get_prop androidboot.slot        /proc/cmdline); then
-    slot=_$slot;
-  fi;
-fi;
-
-if (! is_mounted /data); then
-  if (! mount /data); then abort 'Failed to mount /data'; fi;
-fi;
-for mount_it in /system /vendor; do mount -o ro $mount_it; done;
-
-if [ -n "$slot" ]; then mount_for_ab system; fi;
-if [ -f $system/init.rc ]; then system=$system/system; fi;
-if [ -L $system/vendor ]; then mount_for_ab vendor; fi;
-
-if (! $boot_mode); then
-  if (get_prop ro.product.cpu.abi $system/build.prop | grep -q arm64); then
-    export LD_LIBRARY_PATH=$system/lib64:$system/vendor/lib64;
+if ! $boot_mode; then
+  if uname -m | grep -q arm64; then
+    export LD_LIBRARY_PATH=$system/lib64:$system/vendor/lib64
   else
-    export LD_LIBRARY_PATH=$system/lib:$system/vendor/lib;
-  fi;
-fi;
+    export LD_LIBRARY_PATH=$system/lib:$system/vendor/lib
+  fi
+fi
 
-print 'Do you have Magisk installed ??';
+if $system_mode; then
+  mcc_dir=$adb_dir/mcc
+  bin_dir=$mcc_dir/bin
+  doc_dir=$mcc_dir/docs
+  init_dir=$system/etc/init.d
+  bb_path=$bin_dir/busybox
+  cfg_path=$mcc_dir/mcc.conf
+  mcc_path=$system/xbin/mcc
+  init_path=$init_dir/mcc_launcher
 
-if [ -d /data/adb/magisk ]; then
-  magisk_mode=true;
-  func_path=/data/adb/magisk/util_functions.sh;
-  img_path=/data/adb/magisk.img;
-  mcc_dir_boot=/sbin/.core/img/mcc;
+  if test ! -d $init_dir; then
+    print --info 'Your device lacks init.d support, I recommend that you'
+    print --info 'try out Init.d Injector by @Zackptg5. This tool can be'
+    print --info 'found at XDA, search the forums.'
+    abort 'init.d support not detected'
+  fi
 
-elif [ -d /data/magisk ]; then
-  magisk_mode=true;
-  func_path=/data/magisk/util_functions.sh;
-  img_path=/data/magisk.img;
-  mcc_dir_boot=/magisk/mcc;
+  print --info 'Install start (system)'
+
+  print 'Initializing files/paths'
+  mv $cfg_path $tmp_dir/
+  rm -r $mcc_dir
+  mkdir -p $doc_dir $bin_dir $mcc_dir/log
+
+  print 'Copying files to destinations'
+  cp -rf $sys_dir/.            $system/
+  cp     $bin_path             $bin_dir/
+  cp     $conf_path            $mcc_dir/
+  cp     $copy_path $help_path $doc_dir/
+
+  restore_cfg
+
+  print 'Setting permissions'
+  set_perm_recursive $mcc_dir   0 0    0700 0600 u:object_r:adb_data_file:s0
+  set_perm           $bb_path   0 2000 0710      u:object_r:adb_data_file:s0
+  set_perm           $mcc_path  0 2000 0755
+  set_perm           $init_path 0 0    0755
+
+  print 'Finalizing install'
+  $bb_path --install $bin_dir/
 
 else
-  warn_for_system_install;
-fi;
-if ($magisk_mode && [ ! -f $func_path ]); then warn_for_system_install; fi;
+  mount_dir=$tmp_dir/img
+  mcc_dir=$mount_dir/mcc
+  bin_dir=$mcc_dir/bin
+  doc_dir=$mcc_dir/docs
+  xbin_dir=$mcc_dir/system/xbin
+  bb_path=$bin_dir/busybox
+  cfg_path=$mcc_dir/mcc.conf
+  img_path=$adb_dir/magisk.img
+  mcc_dir_live=/sbin/.core/img/mcc
 
-if ($magisk_mode); then
-  mount_dir=$tmp_dir/img;
-  mcc_dir=$mount_dir/mcc;
-  doc_dir=$mcc_dir/docs;
-  bin_dir_mcc=$mcc_dir/bin;
-  sys_dir_mcc=$mcc_dir/system;
-  cfg_path_mcc=$mcc_dir/mcc.conf;
+  if $boot_mode; then img_path=$adb_dir/magisk_merge.img; fi
+  if test ! -d $system/xbin; then xbin_dir=${xbin_dir%/*}/bin; fi
 
-  if ($boot_mode); then img_path=${img_path%/*}/magisk_merge.img; fi;
+  if test ! -f $img_path; then
+    print "Creating $img_path"
+    if ! make_ext4fs -l 64M $img_path >/dev/null; then
+      $system/bin/mke2fs -t ext4 $img_path 64M >/dev/null
+    fi
+  fi
 
-  if [ $(get_prop MAGISK_VER_CODE $func_path) -lt 1400 ]; then
-    abort 'Magisk >= 1400 is required';
-  fi;
-
-  print 'Installing (Magisk)...';
-
-  mkdir $mount_dir;
-  if [ ! -f $img_path ]; then
-    if (! make_ext4fs -l 64M $img_path >/dev/null); then
-      $system/bin/mke2fs -t ext4 $img_path 64M >/dev/null;
-    fi;
-  fi;
-
-  print "Mounting $img_path...";
+  mkdir $mount_dir
+  print "Mounting $img_path to temp"
   for minor in 0 1 2 3 4 5 6 7; do
-    loop_path=/dev/block/loop$minor;
+    loop_path=/dev/block/loop$minor
 
-    if [ ! -b $loop_path ]; then mknod $loop_path b 7 $minor; fi;
+    if test ! -b $loop_path; then mknod $loop_path b 7 $minor; fi
+    if losetup $loop_path $img_path >/dev/null; then
+      if mount -t ext4 -o loop $loop_path $mount_dir; then break; fi
+    fi
+  done
+  if ! is_mounted $mount_dir; then abort 'Mounting image failed'; fi
 
-    if (losetup $loop_path $img_path >/dev/null); then
-      if (mount -t ext4 -o rw,noatime $loop_path $mount_dir || \
-          mount -t ext4 -o rw,loop    $loop_path $mount_dir); then
-        break;
-      fi;
-    fi;
-  done;
-  if (! is_mounted $mount_dir); then abort "Failed to mount $img_path"; fi;
+  print --info 'Install start (systemless)'
 
-  if ($boot_mode); then
-    cp $mcc_dir_boot/mcc.conf $tmp_dir/;
+  print 'Initializing files/paths'
+  if $boot_mode; then
+    cp $mcc_dir_live/mcc.conf $tmp_dir/
   else
-    cp $cfg_path_mcc $tmp_dir/;
-  fi;
-  rm -r $mcc_dir;
-  mkdir -p $doc_dir $sys_dir_mcc $bin_dir_mcc $mcc_dir/log;
+    cp $cfg_path $tmp_dir/
+  fi
+  rm -r $mcc_dir
+  mkdir -p $doc_dir $xbin_dir $bin_dir $mcc_dir/log
 
-  print 'Copying required files...';
-  cp -r $sys_dir/.                                              $sys_dir_mcc/;
-  cp -r $bin_dir/.                                              $bin_dir_mcc/;
-  cp    $cfg_path $zip_dir/post-fs-data.sh $zip_dir/module.prop $mcc_dir/;
-  cp    $copy_path $help_path                                   $doc_dir/;
+  print 'Copying files to destinations'
+  cp -r $sys_dir/xbin/.                                          $xbin_dir/
+  cp    $bin_path                                                $bin_dir/
+  cp    $conf_path $zip_dir/post-fs-data.sh $zip_dir/module.prop $mcc_dir/
+  cp    $copy_path $help_path                                    $doc_dir/
 
-  restore_cfg;
+  restore_cfg
 
-  rm -r $sys_dir_mcc/etc;
-  if [ ! -d $system/xbin ]; then mv $sys_dir_mcc/xbin $sys_dir_mcc/bin; fi;
+  print 'Setting permissions'
+  set_perm_recursive $mcc_dir  0 0    0755 0644
+  set_perm_recursive $xbin_dir 0 2000 0755 0755
+  set_perm           $bb_path  0 2000 0755
 
-  touch $mcc_dir/auto_mount;
-  if ($boot_mode); then
-    mkdir $mcc_dir_boot;
-    touch $mcc_dir_boot/update;
-    cp -f $mcc_dir/module.prop $mcc_dir_boot/;
-  fi;
+  print 'Finalizing install'
+  touch $mcc_dir/auto_mount
+  if $boot_mode; then
+    mkdir $mcc_dir_live
+    touch $mcc_dir_live/update
+    cp -f $mcc_dir/module.prop $mcc_dir_live/
+  fi
+  $bb_path --install $bin_dir/
+fi
 
-  print 'Setting permissions...';
-  set_perm_recursive $mcc_dir             0 0    0755 0644;
-  set_perm_recursive $sys_dir_mcc/*bin    0 2000 0755 0755;
-  set_perm           $bin_dir_mcc/busybox 0 2000 0755;
-
-else
-  mcc_dir=/data/adb/mcc;
-  doc_dir=$mcc_dir/docs;
-  init_dir=$system/etc/init.d;
-  main_path=$system/xbin/mcc;
-  init_path=$init_dir/mcc_launcher;
-  bin_dir_mcc=$mcc_dir/bin;
-  cfg_path_mcc=$mcc_dir/mcc.conf;
-
-  if [ ! -d $init_dir ]; then
-    abort "Use 'Init.d Injector' for init.d support";
-  fi;
-
-  print 'Installing (system)...';
-
-  mv $cfg_path_mcc $tmp_dir/;
-  rm -r $mcc_dir;
-  mkdir -p $doc_dir $bin_dir_mcc $mcc_dir/log;
-
-  print 'Copying required files...';
-  cp -rf $sys_dir/.            $system/;
-  cp -r  $bin_dir/.            $bin_dir_mcc/;
-  cp     $cfg_path             $mcc_dir/;
-  cp     $copy_path $help_path $doc_dir/;
-
-  restore_cfg;
-
-  print 'Setting permissions...';
-  set_perm_recursive $mcc_dir               0 0    0700 0600 u:object_r:adb_data_file:s0;
-  set_perm           $bin_dir_mcc/busybox   0 2000 0710      u:object_r:adb_data_file:s0;
-  set_perm           $main_path             0 2000 0755;
-  set_perm           $init_path             0 0    0755;
-fi;
-
-cleanup;
-print --done;
-exit 0;
+cleanup
+print --warn 'Done installing. After rebooting, you must call the'
+print --warn 'configurator by `mcc --config` to configure mcc. If'
+print --warn 'not, mcc will not work!'
+print --done
+exit 0
