@@ -608,7 +608,7 @@ case $1 in
     if test $# -gt 1; then abort 'Invalid argument(s).'; fi
 
     head -n 4   $help_path
-    head -n 197 $help_path | tail -n 177
+    head -n 196 $help_path | tail -n 176
   ;;
 
   *)

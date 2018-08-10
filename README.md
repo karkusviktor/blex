@@ -197,6 +197,10 @@
 
 ## Changelog
 
+#### Redefined 1.1.3
+
+* Fix [--help] page output.
+
 #### Redefined 1.1.2
 
 * Fix unzipping error.
