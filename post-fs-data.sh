@@ -1,40 +1,33 @@
 #!/system/bin/sh
-# My Charging Controller
+# Battery Life Extender
 # JayminSuthar @ xda-developers
 
 # Copyright (c) 2018 Jaymin Suthar. All rights reserved.
 
-# This file is a part of "My Charging Controller (mcc)".
+# This file is a part of "Battery Life Extender (blex)".
 
-# mcc is released under the terms of the GNU GPL v3, as been
-## published by the Free Software Foundation. And permission
-## hereby is granted to use, modify or redistribute it maybe
-## partially or entirely under GPLv3 only.
+# blex is released under the GNU GPL v3 license as published
+# by the Free Software Foundation. And you hereby, are given
+# permission to use, modify or redistribute it either partly
+# or entirely, under v3 or any later version of the GPL.
 
-# mcc was written in a hope of being useful. And any kind of
-## warranty is not provided. See GPLv3 for details.
+# blex is provided to be useful, and no warranty, support or
+# fitness for a specific purpose is promised with it, and to
+# just not blame me for anything it caused, see the GPL.
 
-# You should already have received a copy of GPLv3 with mcc,
-## if not, see <http://www.gnu.org/licenses/>.
+# blex is always built with a copy of GPLv3 (COPYING) in the
+# top folder, if not see <http://www.gnu.org/licenses/>.
 
-mcc_dir=${0%/*}
-bin_dir=$mcc_dir/system/xbin
-lock_path=$mcc_dir/.lock
+blex_dir=/sbin/.core/img/blex
+bin_dir=$blex_dir/bin
 
-umask 022
-exec 2>$mcc_dir/log/boot.log
+exec 2>$blex_dir/log/boot.log
 set -x
 
-if test ! -d $bin_dir; then bin_dir=${bin_dir%/*}/bin; fi
-
-set_prop() {
-  sed -i "s|^$1=.*|$1=$2|" $3
-}
-
-set_prop mcc_dir   $mcc_dir $bin_dir/mcc
-set_prop switch_do default  $mcc_dir/mcc.conf
-touch $lock_path
+( (
+sleep 5
+$bin_dir/busybox --install $bin_dir/
 
 sleep 120
-rm $lock_path
-PATH=$bin_dir:/sbin:/system/xbin:/system/bin:/vendor/bin skip_mcc_logs=true mcc --launch-daemon </dev/null >/dev/null 2>&1
+PATH=/sbin:/system/bin:/system/xbin:/vendor/bin blex --detach --skip-logs --run-daemon </dev/null >/dev/null 2>&1
+) &)

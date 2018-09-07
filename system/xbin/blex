@@ -1,0 +1,612 @@
+#!/system/bin/sh
+# Battery Life Extender
+# JayminSuthar @ xda-developers
+
+# Copyright (c) 2018 Jaymin Suthar. All rights reserved.
+
+# This file is a part of "Battery Life Extender (blex)".
+
+# blex is released under the GNU GPL v3 license as published
+# by the Free Software Foundation. And you hereby, are given
+# permission to use, modify or redistribute it either partly
+# or entirely, under v3 or any later version of the GPL.
+
+# blex is provided to be useful, and no warranty, support or
+# fitness for a specific purpose is promised with it, and to
+# just not blame me for anything it caused, see the GPL.
+
+# blex is always built with a copy of GPLv3 (COPYING) in the
+# top folder, if not see <http://www.gnu.org/licenses/>.
+
+enforce=false
+
+blex_dir=/sbin/.core/img/blex
+cfg_file=$blex_dir/blex.cfg
+bin_dir=$blex_dir/bin
+
+print() {
+  case "$1" in
+    --error) echo $3 "ERROR: $2" ;;
+    --info)  echo $3 "INFO: $2"  ;;
+    *)       echo $2 "- $1"      ;;
+  esac
+}
+
+abort() {
+  print --error "$1"
+  exit 1
+}
+
+get_prop() {
+  if test -z "$2"; then
+    prop_file=$cfg_file
+  else
+    prop_file=$2
+  fi
+  sed -n "s/^$1=//p" $prop_file
+}
+
+set_prop() {
+  sed -i "s|^$1=.*|$1=$2|" $cfg_file
+}
+
+auto_switch() {
+  get_prop auto_switch
+}
+
+auto_power() {
+  get_prop auto_power
+}
+
+thr_disable() {
+  get_prop thr_disable
+}
+
+thr_enable() {
+  get_prop thr_enable
+}
+
+thr_power() {
+  get_prop thr_power
+}
+
+switch_do() {
+  get_prop switch_do
+}
+
+uevent_f() {
+  get_prop uevent
+}
+
+switch_p() {
+  get_prop switch_$1 | awk "{ print \$$2 }"
+}
+
+limits_wrap() {
+  if test $1 -lt $2 || test $1 -gt $3; then
+    abort "$1 does not belong to $2-$3"
+  fi
+}
+
+level_wrap() {
+  if ! echo $1 | grep -Eq '^[0-9]+$'; then
+    abort "$1 is not a number"
+  fi
+  limits_wrap $1 1 99
+}
+
+validate_wrap() {
+  level_wrap $1
+  if ! $enforce; then
+    limits_wrap $1 $2 $3
+  fi
+}
+
+get_event() {
+  get_prop POWER_SUPPLY_$1 $(uevent_f)
+}
+
+batt_level() {
+  get_event CAPACITY
+}
+
+is_charging() {
+  if test "$1" != --test-current; then
+    get_event STATUS | grep -q '^[Cc]harging'
+  else
+    test $(get_event CURRENT_NOW) -le 0
+  fi
+}
+
+write() {
+  for i in 1 2; do
+    if switch=$(switch_p $i 1 | grep -v dummySwitch); then
+      switch_p $i $1 >$switch
+    fi
+  done
+}
+
+switch() {
+  case $1 in
+    --ON)
+      do_write='! is_charging'
+      field_inv=3
+      field=2
+    ;;
+    --OFF)
+      do_write='is_charging'
+      field_inv=2
+      field=3
+    ;;
+  esac
+
+  if eval "$do_write"; then
+    write=true
+  elif $write && eval "$do_write --test-current"; then
+    write $field_inv
+    sleep 0.3
+  else
+    write=false
+  fi
+
+  if $write; then
+    write $field
+  fi
+}
+
+get_proc() {
+  ps | grep -v grep | grep '{blex}' | grep $@
+}
+
+kill_proc() {
+  kill -9 $(get_proc $1 | awk '{ print $1 }')
+}
+
+is_runningd() {
+  get_proc -q --run-daemon
+}
+
+configurator() {
+  skip_root=false
+  sr_sig=$blex_dir/.sr_sig
+  tmp_cache=/cache/blex.tmp
+
+  if test "$1" != --redo; then
+    if test -f $(uevent_f) && test -f $(switch_p 1 1); then
+      return 0
+    elif test "$1" == --test-only; then
+      return 1
+    fi
+  fi
+
+  print --info 'Press enter when device is charging: ' -n
+  read i
+
+  if test -f $sr_sig; then
+    print --info 'Reboot detected and workarounded'
+    skip_root=true
+  fi
+
+  set_prop uevent dummyEvents
+  for i in 2 1; do
+    set_prop switch_$i dummySwitch
+  done
+
+  find /sys/devices /sys/module -type f -name uevent >$tmp_cache
+  touch $sr_sig
+
+  print "Configuring blex' kernel interface"
+
+  while read -r info_events; do
+    if grep -q '^POWER_SUPPLY_NAME=.*[Bb]att' $info_events; then
+      set_prop uevent $info_events
+
+      while read -r ctrl_events; do
+        if grep -Eq '^POWER_SUPPLY_NAME=.*([Bb]att|USB|usb)' $ctrl_events || \
+           grep -Eq '^DRIVER=.*[Cc]harg(er|ing)'             $ctrl_events; then
+
+          for sock_node in ${ctrl_events%/*}/*; do
+            if   ls -l $sock_node | grep -Eq '^-[rx\-]+w[rwx\-]* ' && \
+(! $skip_root || ls -l $sock_node | grep -Eq ' system | radio '); then
+
+              case "$(cat $sock_node)" in
+                1)        key_on=1;        key_off=0;        ;;
+                0)        key_on=0;        key_off=1;        ;;
+                on)       key_on=on;       key_off=off;      ;;
+                off)      key_on=off;      key_off=on;       ;;
+                true)     key_on=true;     key_off=false;    ;;
+                false)    key_on=false;    key_off=true;     ;;
+                enable)   key_on=enable;   key_off=disable;  ;;
+                disable)  key_on=disable;  key_off=enable;   ;;
+                enabled)  key_on=enabled;  key_off=disabled; ;;
+                disabled) key_on=disabled; key_off=enabled;  ;;
+                *) continue ;;
+              esac
+
+              echo $key_off >$sock_node
+              sleep 0.3
+
+              if is_charging; then
+                tmp=$key_on
+                key_on=$key_off
+                key_off=$tmp
+                echo $key_off >$sock_node
+                sleep 0.3
+              fi
+
+              if ! is_charging; then
+                echo $key_on >$sock_node
+                sleep 0.3
+                if is_charging; then
+                  set_prop switch_$i "$sock_node $key_on $key_off"
+                  if test $i -eq 2; then
+                    break 3
+                  fi
+                  i=2
+                fi
+              fi
+            fi
+          done
+        fi
+      done <$tmp_cache
+      if test $i -eq 2; then
+        break
+      fi
+    fi
+  done <$tmp_cache
+  rm $sr_sig
+
+  if test $i -ne 2; then
+    set_prop uevent dummyEvents
+    return 1
+  fi
+  return 0
+}
+
+setup_exit() {
+  if ! is_runningd; then
+    abort 'blex daemon is not running'
+  elif test "$1" == --test-methods; then
+    if $(switch_do) != default; then
+      abort 'Another method is already running'
+    fi
+  elif ! configurator; then
+    abort 'Failed to configure blex'
+  fi
+}
+
+toggle() {
+  case "$3" in
+    ON)  new_val=true  ;;
+    OFF) new_val=false ;;
+
+    *)
+      print --info 'Inverting feature detected'
+      print 'Checking configurations'
+      if $($1); then
+        new_val=false
+      else
+        new_val=true
+      fi
+    ;;
+  esac
+
+  if $new_val; then
+    setup_exit
+  fi
+
+  print "Toggling $2"
+  set_prop $1 $new_val
+}
+
+charge() {
+  case "$1" in
+    --enable)  key_init=enable  ;;
+    --disable) key_init=disable ;;
+    *) abort 'Invalid arguments' ;;
+  esac
+
+  if test -z "$2"; then
+    abort 'Missing argument'
+  fi
+
+  setup_exit --test-methods
+
+  print 'Parsing argument'
+  if echo $2 | grep -Eq '^[0-9]+%$'; then
+    print --info 'Level based method call detected'
+
+    end_level=$(echo $2 | tr -d %)
+    limits_wrap $end_level 1 99
+
+  elif echo $2 | grep -Eq '^[0-9]+[smh]?$'; then
+    print --info 'Time based method call detected'
+  else
+    abort 'Invalid format'
+  fi
+
+  print 'Catching blex daemon'
+  set_prop switch_do $key_init
+
+  print "Keeping charging ${key_init}d until $2"
+  if ! sleep $2; then
+    while test $(batt_level) -ne $end_level; do
+      sleep 1
+    done
+  fi
+
+  print 'Releasing daemon'
+  set_prop switch_do default
+}
+
+if ! id | grep uid=0 >/dev/null; then
+  abort 'Root access is not granted'
+elif test ! -x $bin_dir/awk; then
+  abort 'blex files are (possibly) corrupted'
+fi
+
+if test "$1" == --detach; then
+  shift
+  ( (blex "$@") &)
+  exit
+else
+  OLD_PATH=$PATH
+  export PATH=$bin_dir:$PATH
+  if test "$1" == --skip-logs; then
+    shift
+  else
+    exec 2>$blex_dir/log/main.log
+    set -x
+  fi
+  if test "$1" == --enforce; then
+    enforce=true
+    shift
+  fi
+fi
+
+echo
+echo '************************************'
+echo '  Battery Life Extender (blex) CLI  '
+echo '************************************'
+
+case "$1" in
+  --update)
+    case "$2" in
+      switch)
+        if test -n "$4"; then
+          thr_disable=$3
+          thr_enable=$4
+
+          print 'Validating arguments'
+
+          level_wrap $3
+          level_wrap $4
+
+          if test $3 -le $4; then
+            abort "$3 is not greater than $4"
+          elif ! $enforce; then
+            limits_wrap $3 15 85
+            limits_wrap $4 15 85
+            if test $3 -lt $(($4 + 5)); then
+              abort "$3 is too close to $4"
+            fi
+          fi
+        elif test -n "$3"; then
+          thr_disable=$3
+
+          print 'Validating argument'
+          validate_wrap $3 20 85
+
+          print 'Figuring out lower threshold'
+          if test $3 -ge 25; then
+            thr_enable=$(($3 - 10))
+          elif test $3 -ge 20; then
+            thr_enable=15
+          elif test $3 -ge 6; then
+            thr_enable=$(($3 - 5))
+          elif test $3 -eq 1; then
+            thr_disable=2
+            thr_enable=1
+          else
+            thr_enable=1
+          fi
+        else
+          print --info 'Reverting thresholds detected'
+          thr_disable=80
+          thr_enable=70
+        fi
+
+        print 'Updating Auto Switch thresholds'
+        set_prop thr_disable $thr_disable
+        set_prop thr_enable  $thr_enable
+      ;;
+
+      power)
+        if test -n "$3"; then
+          thr_power=$3
+
+          print 'Validating argument'
+          validate_wrap $3 5 20
+        else
+          print --info 'Reverting threshold detected'
+          thr_power=20
+        fi
+
+        print 'Updating Auto Power threshold'
+        set_prop thr_power $thr_power
+      ;;
+
+      *)
+        print --info 'Reverting thresholds detected'
+        print 'Updating Auto Switch/Power thresholds'
+        set_prop thr_disable 80
+        set_prop thr_enable  70
+        set_prop thr_power   20
+      ;;
+    esac
+    print 'Done'
+  ;;
+
+  --toggle)
+    case "$2" in
+      switch) toggle auto_switch 'Auto Switch' $3 ;;
+      power)  toggle auto_power  'Auto Power'  $3 ;;
+
+      *)
+        print --info 'Reverting features detected'
+        setup_exit
+        print 'Toggling Auto Switch/Power'
+        set_prop auto_switch true
+        set_prop auto_power  true
+      ;;
+    esac
+    print 'Done'
+  ;;
+
+  --manual)
+    if test "$2" == stop; then
+      if ! get_proc -q --manual; then
+        abort 'Any manual method is not running'
+      fi
+      print 'Stopping manual method'
+      kill_proc --manual
+      set_prop switch_do default
+    else
+      charge --$2 $3
+    fi
+    print 'Done'
+  ;;
+
+  --mkdaemon)
+    if "$2" == stop; then
+      if ! is_runningd; then
+        abort 'blex daemon is not running'
+      fi
+      print 'Stopping blex daemon'
+      kill_proc --run-daemon
+    else
+      setup_exit
+
+      print 'Starting blex daemon'
+      PATH=$OLD_PATH blex --detach --skip-logs --run-daemon </dev/null >/dev/null 2>&1
+      if ! is_runningd; then
+        abort 'Failed to start daemon'
+      fi
+    fi
+    print 'Done'
+  ;;
+
+  --run-daemon)
+    write=true
+    revert=false
+    stat_saved=default
+
+    set_prop switch_do default
+
+    while true; do
+      while ! configurator --test-only; do
+        sleep 0.1
+      done
+
+      if $(auto_power); then
+        if test $(batt_level) -le $(thr_power); then
+          if ! poweroff; then
+            setprop sys.powerctl shutdown
+          fi
+        fi
+      fi
+
+      case $(switch_do) in
+        default)
+          if $(auto_switch); then
+            if test $(batt_level) -ge $(thr_disable); then
+              revert=false
+              stat_saved=OFF
+              switch --OFF
+
+            elif test $(batt_level) -le $(thr_enable); then
+              revert=false
+              stat_saved=ON
+              switch --ON
+
+            elif $revert; then
+              if test $stat_saved != default; then
+                switch --$stat_saved
+                revert=$write
+              fi
+            fi
+          fi
+        ;;
+        enable)
+          revert=true
+          switch --ON
+        ;;
+        disable)
+          revert=true
+          switch --OFF
+        ;;
+      esac
+      sleep 1
+    done
+  ;;
+
+  --restat)
+    print 'Resetting battery statistics'
+    dumpsys batterystats --reset >/dev/null
+    rm -f /data/system/batterystats.bin
+    print 'Done'
+  ;;
+
+  --configure)
+    if ! configurator --redo; then
+      abort 'Failed to configure blex'
+    fi
+    print 'Done'
+  ;;
+
+  --info)
+    if ! configurator; then
+      abort 'Failed to configure blex'
+    fi
+    if ! is_charging; then
+      chg_stat='Not charging'
+    else
+      chg_stat='Charging'
+    fi
+    if $(auto_switch); then
+      as_stat=ON
+    else
+      as_stat=OFF
+    fi
+    if $(auto_power); then
+      ap_stat=ON
+    else
+      ap_stat=OFF
+    fi
+    if ! is_runningd; then
+      dm_stat='Not running'
+    else
+      dm_stat='Running'
+    fi
+
+    echo -e 'Battery Information\n'
+
+    print "Level : $(batt_level)"
+    print "Health: $(get_event HEALTH)"
+    print "State : $chg_stat"
+
+    echo -e '\nCurrent Settings\n'
+
+    print "Auto Switch thresholds: $(thr_disable), $(thr_enable)"
+    print "Auto Power  threshold : $(thr_power)"
+    print "Auto Switch state     : $as_stat"
+    print "Auto Power  state     : $ap_stat"
+
+    echo -e "\nDaemon State: $dm_stat\n"
+  ;;
+
+  --help) cat $blex_dir/docs/HELP ;;
+
+  *) abort 'Invalid usage: run `blex --help` for help' ;;
+esac
+exit 0
