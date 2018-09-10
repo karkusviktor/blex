@@ -264,13 +264,18 @@ configurator() {
 }
 
 setup_exit() {
+
   if ! is_runningd; then
     abort 'blex daemon is not running'
-  elif test "$1" == --test-methods; then
-    if $(switch_do) != default; then
+  fi
+
+  if test "$1" == --test-methods; then
+    if test $(switch_do) != default; then
       abort 'Another method is already running'
     fi
-  elif ! configurator; then
+  fi
+
+  if ! configurator; then
     abort 'Failed to configure blex'
   fi
 }
