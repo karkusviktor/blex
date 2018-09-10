@@ -144,7 +144,7 @@ switch() {
     write=true
   elif $write && eval "$do_write --test-current"; then
     write $field_inv
-    sleep 0.3
+    sleep 1
   else
     write=false
   fi
@@ -224,19 +224,19 @@ configurator() {
               esac
 
               echo $key_off >$sock_node
-              sleep 0.3
+              sleep 1
 
               if is_charging; then
                 tmp=$key_on
                 key_on=$key_off
                 key_off=$tmp
                 echo $key_off >$sock_node
-                sleep 0.3
+                sleep 1
               fi
 
               if ! is_charging; then
                 echo $key_on >$sock_node
-                sleep 0.3
+                sleep 1
                 if is_charging; then
                   set_prop switch_$i "$sock_node $key_on $key_off"
                   if test $i -eq 2; then
