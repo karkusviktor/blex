@@ -405,6 +405,7 @@ case "$1" in
           elif ! $enforce; then
             limits_wrap $3 15 85
             limits_wrap $4 15 85
+
             if test $3 -lt $(($4 + 5)); then
               abort "$3 is too close to $4"
             fi
@@ -486,6 +487,7 @@ case "$1" in
       if ! get_proc -q --manual; then
         abort 'Any manual method is not running'
       fi
+
       print 'Stopping manual method'
       kill_proc --manual
       set_prop switch_do default
@@ -498,6 +500,7 @@ case "$1" in
   --mkdaemon)
     if "$2" == stop; then
       daemon_exit
+
       print 'Stopping blex daemon'
       kill_proc --run-daemon
     else
@@ -582,6 +585,7 @@ case "$1" in
 
   --info)
     config_exit
+
     if ! is_charging; then
       chg_stat='Not charging'
     else
