@@ -368,6 +368,7 @@ echo
 echo '************************************'
 echo '  Battery Life Extender (blex) CLI  '
 echo '************************************'
+echo
 
 case "$1" in
   --update)

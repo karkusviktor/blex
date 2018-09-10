@@ -132,6 +132,7 @@ ui_print ' '
 ui_print '******************************************'
 ui_print '  Battery Life Extender (blex) Installer  '
 ui_print '******************************************'
+ui_print ' '
 
 print 'Preparing environment'
 
