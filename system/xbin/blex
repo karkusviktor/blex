@@ -263,11 +263,25 @@ configurator() {
   return 0
 }
 
-setup_exit() {
-
-  if ! is_runningd; then
+daemon_exit() {
+  if test "$1" == --inv-daemon; then
+    if is_runningd; then
+      abort 'blex daemon is already running'
+    fi
+  elif ! is_runningd; then
     abort 'blex daemon is not running'
   fi
+}
+
+config_exit() {
+  if ! configurator $1; then
+    abort 'Failed to configure blex'
+  fi
+}
+
+setup_exit() {
+
+  daemon_exit $1
 
   if test "$1" == --test-methods; then
     if test $(switch_do) != default; then
@@ -275,9 +289,7 @@ setup_exit() {
     fi
   fi
 
-  if ! configurator; then
-    abort 'Failed to configure blex'
-  fi
+  config_exit
 }
 
 toggle() {
@@ -485,13 +497,11 @@ case "$1" in
 
   --mkdaemon)
     if "$2" == stop; then
-      if ! is_runningd; then
-        abort 'blex daemon is not running'
-      fi
+      daemon_exit
       print 'Stopping blex daemon'
       kill_proc --run-daemon
     else
-      setup_exit
+      setup_exit --inv-daemon
 
       print 'Starting blex daemon'
       PATH=$OLD_PATH blex --detach --skip-logs --run-daemon </dev/null >/dev/null 2>&1
@@ -507,9 +517,7 @@ case "$1" in
     revert=false
     stat_saved=default
 
-    if is_runningd; then
-      abort 'blex daemon is already running'
-    fi
+    daemon_exit --inv-daemon
 
     set_prop switch_do default
 
@@ -568,16 +576,12 @@ case "$1" in
   ;;
 
   --configure)
-    if ! configurator --redo; then
-      abort 'Failed to configure blex'
-    fi
+    config_exit --redo
     print 'Done'
   ;;
 
   --info)
-    if ! configurator; then
-      abort 'Failed to configure blex'
-    fi
+    config_exit
     if ! is_charging; then
       chg_stat='Not charging'
     else
