@@ -358,8 +358,8 @@ charge() {
 
 if ! id | grep uid=0 >/dev/null; then
   abort 'Root access is not granted'
-elif test ! -x $bin_dir/awk; then
-  abort 'blex files are (possibly) corrupted'
+elif test ! -x $bin_dir/pgrep; then
+  abort 'blex files are corrupted'
 fi
 
 if test "$1" == --detach; then
@@ -621,6 +621,6 @@ case "$1" in
 
   --help) cat $blex_dir/docs/HELP ;;
 
-  *) abort 'Invalid usage: run `blex --help` for help' ;;
+  *) abort 'Invalid usage: see `blex --help`' ;;
 esac
 exit 0
