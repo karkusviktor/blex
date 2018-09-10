@@ -1,4 +1,4 @@
-## This is the beta repository of blex, it might have bugs.
+## This is the devel repository of blex, it might have bugs.
 
 ###### Battery Life Extender
 ###### JayminSuthar @ xda-developers
@@ -210,6 +210,18 @@
 * Every blex/mcc beta tester :)
 
 ## Changelog
+
+#### 0.1.1
+
+* blex is no longer in beta stage!
+
+* Fix configuring for lazy kernel events.
+* Fix detecting running processes.
+* Fix daemon checking in [--mkdaemon].
+* Fix manual methods detection.
+* Fix stopping multiple methods.
+* Prevent running multiple daemons.
+* Minor UI update.
 
 #### 0.1.beta
 
