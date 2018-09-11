@@ -163,7 +163,7 @@ kill_proc() {
 }
 
 is_runningd() {
-  get_proc \-\-run\-daemon | grep -vq $$
+  get_proc \\--run-daemon | grep -vq $$
 }
 
 configurator() {
@@ -206,7 +206,7 @@ configurator() {
            grep -Eq '^DRIVER=.*[Cc]harg(er|ing)'             $ctrl_events; then
 
           for sock_node in ${ctrl_events%/*}/*; do
-            if   ls -l $sock_node | grep -Eq '^\-[rx\-]+w[rwx\-]* ' && \
+            if   ls -l $sock_node | grep -Eq '^-[rx\-]+w[rwx\-]* ' && \
 (! $skip_root || ls -l $sock_node | grep -Eq ' system | radio '); then
 
               case "$(cat $sock_node)" in
@@ -484,12 +484,12 @@ case "$1" in
 
   --manual)
     if test "$2" == stop; then
-      if ! get_proc -q \-\-manual; then
+      if ! get_proc -q \\--manual; then
         abort 'Any manual method is not running'
       fi
 
       print 'Stopping manual method'
-      kill_proc \-\-manual
+      kill_proc \\--manual
       set_prop switch_do default
     else
       charge --$2 $3
@@ -502,7 +502,7 @@ case "$1" in
       daemon_exit
 
       print 'Stopping blex daemon'
-      kill_proc \-\-run\-daemon
+      kill_proc \\--run-daemon
     else
       setup_exit --inv-daemon
 
