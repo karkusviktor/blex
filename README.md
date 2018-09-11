@@ -1,5 +1,3 @@
-## This is the devel repository of blex, it might have bugs.
-
 ###### Battery Life Extender
 ###### JayminSuthar @ xda-developers
 
@@ -210,6 +208,12 @@
 * Every blex/mcc beta tester :)
 
 ## Changelog
+
+#### 0.1.2
+
+* Fix CLI not recognizing the daemon.
+* Fix [--mkdaemon] always starting daemon.
+* Update strings.
 
 #### 0.1.1
 
