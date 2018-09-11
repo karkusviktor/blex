@@ -320,7 +320,7 @@ charge() {
   case "$1" in
     --enable)  key_init=enable  ;;
     --disable) key_init=disable ;;
-    *) abort 'Invalid arguments' ;;
+    *) abort 'Invalid argument(s)' ;;
   esac
 
   if test -z "$2"; then
@@ -625,6 +625,6 @@ case "$1" in
 
   --help) cat $blex_dir/docs/HELP ;;
 
-  *) abort 'Invalid usage: see `blex --help`' ;;
+  *) abort 'Invalid argument(s), see `blex --help`' ;;
 esac
 exit 0
