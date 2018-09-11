@@ -5,17 +5,17 @@
 
 # This file is a part of "Battery Life Extender (blex)".
 
-# blex is released under the GNU GPL v3 license as published
-# by the Free Software Foundation. And you hereby, are given
-# permission to use, modify or redistribute it either partly
-# or entirely, under v3 or any later version of the GPL.
+# blex is release under the terms of GNU GPL v3 as published
+# by the Free Software Foundation. And you hereby are allowed
+# to use, modify or redistribute it, either pieces of it or
+# entirely under v3 or any later version of the GPL.
 
-# blex is provided to be useful, and no warranty, support or
-# fitness for a specific purpose is promised with it, and to
-# just not blame me for anything it caused, see the GPL.
+# blex is developed in a hope of being useful, but neither
+# warranty nor support are provided with it, not even fitness
+# for the particular purpose. See the GPLv3 for details.
 
-# blex is always built with a copy of GPLv3 (COPYING) in the
-# top folder, if not see <http://www.gnu.org/licenses/>.
+# A copy of GPLv3 (COPYING) is placed in the root folder of
+# blex which can also be found at <https://www.gnu.org/licenses/>.
 
 blex.cfg                                      text    eol=lf
 COPYING                                       text    eol=lf
