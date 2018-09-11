@@ -498,7 +498,7 @@ case "$1" in
   ;;
 
   --mkdaemon)
-    if "$2" == stop; then
+    if test "$2" == stop; then
       daemon_exit
 
       print 'Stopping blex daemon'
