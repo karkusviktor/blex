@@ -163,7 +163,7 @@ kill_proc() {
 }
 
 is_runningd() {
-  get_proc \\--run-daemon | grep -vq $$
+  test $(get_proc \\--run-daemon | awk '{ print $1 }') -eq $$
 }
 
 configurator() {
