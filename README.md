@@ -26,183 +26,219 @@
 * [Git Repository](https://github.com/Magisk-Modules-Repo/Battery-Life-Extender)
 * [Support Thread](https://forum.xda-developers.com/apps/magisk/mcs-charging-controller-t3739371)
 
-## Intro
+## Introduction
 
-* #### blex extends/maintains batteries' life with some fun.
+* #### blex helps in extending/maintaining lithium batteries'
+  life by controlling when charging is enabled or disabled.
 
 ## Details
 
-* Well, there have been many articles about how to extend or
-  maintain lithium batteries' life long enough that I didn't
-  read neither entirely, but I actually went on to develop a
-  nice tool that could help users achieve that Automated and
-  reliably, and that, is blex.
+* blex is a tool that lets you enable or disable charging pro-
+  gramatically so to extend/maintain batteries' life, it is
+  reliable and also fully automated.
 
-* blex provides you an Automation consisting of two features
-  'Auto Switch' and 'Auto Power'. Auto Switch depends on two
-  settings, thr_disable and thr_enable to disable and enable
-  charging. The purpose of it is to make the circuit not get
-  away from our specified limits, this is to basically let a
-  consistent charge cycle be maintained which is recommended
-  if you need the battery to long last, and it really is too
-  good on that as counted against total charge cycles. So it
-  will disable charging when the disable threshold is hit to
-  enable it back when the enable threshold is hit. The other
-  Auto Power, uses thr_power to power the device off. Reason
-  for this is just that, to not let drain battery so much as
-  it might harm it bringing back to life. So it'll power the
-  device off when power threshold is hit.
+* Automation provided includes two features which are 'Auto
+  Switch' and 'Auto Power'. Auto Switch is a feature which
+  disables charging when a disable threshold has been hit and
+  enables charging back as soon as the battery level hits an
+  enable threshold, whereas Auto Power is a feature which'll
+  power the device OFF as soon as level has reached a power
+  threshold.
 
-* blex also has manual methods to enable/disable charging on
-  demand, and [--restat] to reset battery statistics. Others
-  and these, everything is described well in CLI section.
+* The purpose behind Auto Switch is to make the battery lie
+  inside our specified limits so that a constant charge cycle
+  can be maintained that's a basic requirement when you wish
+  to extend the batteries' life. It helps to increase maximum
+  charge cycles the battery can have and that without losing
+  anything.
 
-## Prereqs
+* And the purpose behind Auto Power is to never let the batt-
+  ery lose voltages too low that it might harm the battery
+  bringing back to the life. This helps to prevent some weird
+  issues like unwanted battery levels shown.
+
+* blex also provides you to enable/disable charging manually
+  on demand, and that introduces manual methods. You can use
+  manual methods to fulfill the need based on either level or
+  time, refer to the 'CUI' section for more.
+
+* The 'CUI' section provides details on each flag and option
+  that you can use to setup Automation, configure blex, launch
+  the daemon, reset battery statistics and more...
+
+## Requirements
 
 * An arm-based chipset.
-* Basic terminal/CLI knowledge.
-* (if Magisk install) Magisk v14.6+.
-* (otherwise) Any root solution.
-* (otherwise) Init.d support.
+* Basic terminal knowledge.
+* (if Magisk install...) Magisk 14.6+.
+* (...or else) Any root solution.
+* (...or else) Init.d support.
 
-## Install
+## Installation
 
-* blex can be installed either in Magisk or system mode. The
-  difference is that Magisk mode does not modify the system,
-  whereas the other one does (possibly making the device un-
-  bootable). Flash the zip from Magisk Manager or a recovery
-  and the installer will detect Magisk install to install in
-  Magisk mode, otherwise system mode. Note that if Magisk is
-  older, it will install in system mode. Files will be saved
-  inside the image if Magisk install, else /data/adb/blex is
-  used.
+* blex supports both the Magisk systemless install and the
+  standard /system modifying install, just make sure all the
+  requirements are met for that specific install mode and do
+  flash the zip from either custom recovery or Magisk Manager
+  and blex will detect install mode for you and install accor-
+  dingly.
+
+* NOTE: Modifying /system might make your device unbootable.
+* NOTE: If Magisk is detected, you can't do standard install.
+* NOTE: If Magisk is older than required, it'll automatically
+  install in standard /system modifying mode.
 
 ## Setup
 
-* After installing, you must run 'blex --configure' to setup
-  blex' kernel interface configs, otherwise blex is useless.
-  This is required only once after install/upgrade. Also set
-  Automation features and/or their thresholds to have a nice
-  set-and-forget concept, though default settings should may
-  great enough, they are my personal settings so far. I will
-  recommend not enforcing thresholds to serve the purpose in
-  a better and efficient manner.
+* After installing, blex requires you to configure itself by
+  running 'blex --configure', if you don't do that, blex will
+  be of no use to you. This step is required only once after
+  installing/upgrading.
+
+* I also recommend you to toggle ON/OFF Automation features
+  and set their thresholds to your needs to have a nice set-
+  and-forget concept.
+
+* NOTE: Enforcing thresholds outside blex' recommended limits
+  is against the purpose of extending batteries' life and thus
+  is strongly discouraged. That flag is included just for some
+  users who wish to use blex to control charging rather than
+  to extend/maintain batteries' life.
 
 ## Usage
 
-* The blex daemon will be launched at boot by the boot scrip
-  that handles all the core runtime functionalities. But you
-  will still need a CLI to configure it, setup Automation or
-  have manual methods running on. You will need to install a
-  terminal (like Termux). Launch the terminal and write 'su'
-  to have root access, then 'blex [flags] [options] args' is
-  what you need. Note to not run multiple blex processes and
-  also note that everything is checked and defaulted, so use
-  it wisely.
+* blex provides a nice, user-friendly and easy to use CUI to
+  the user. This CUI can be used to configure or setup blex or
+  to run a manual method, etc... All you need is a terminal
+  emulator (like Termux). So, in steps...
 
-## CLI
+* ...launch the terminal,
+* write 'su' to have a root shell,
+* and call blex by running 'blex [flags] [options] args'.
+
+* NOTE: If you have multiple blex processes running, they may
+  interfere with each other, please avoid such conditions.
+* NOTE: Most things in CUI are checked and defaulted to some
+  action if an argument is not provided.
+
+## CUI
 
 * Flags
 
     [--detach]
 
-    Detach blex from the terminal so that it can run as some
-    background process. Useful when running manual methods.
+    Detach from the terminal and run as a background process.
 
     [--skip-logs]
 
-    Skip logging blex command execution tree and errors to a
-    log file. Useful for preserving 'em and manual methods.
+    Skip dumping logs to the logfile (to improve performance).
 
     [--enforce]
 
-    Enforce any valid threshold (1-99) and do not abort such
-    operations, can even keep battery level constant. Useful
-    only when you're sure you're not doing some wrong math.
+    Enforce any value between 1-99 as a valid threshold and
+    do not perform mathematics on arguments given.
 
-    Note that [--detach] must be the first, [--skip-logs] be
-    the second and [--enforce] be the third flag in order to
-    let blex recognize them.
+    NOTE: Flags must be in order [--detach] > [--skip-logs] > [--enforce]
+    or else blex will misinterpret them as options.
 
 * Options
 
     [--update] [switch/power] [disable/power] [enable]
 
-    Update Automation thresholds from arguments or revert if
-    no arguments provided. [switch/power] determines feature
-    to update thresholds of followed by the thresholds them-
-    selves. Args will be validated by blex by default unless
-    the [--enforce] flag is given. It will also think enable
-    threshold (of Auto Switch) out if that's not given. Also
-    thresholds for a feature will be reverted if they're not
-    given, and all thresholds will be reverted if no feature
-    is specified.
+    Update Automation thresholds. The feature that provides
+    the thresholds is the first argument and new values of
+    thresholds are arguments following that.
+
+    If the feature is Auto Power, second argument is power
+    threshold, and if the feature is Auto Switch, second and
+    third arguments are disable and enable thresholds accor-
+    dingly.
+
+    If enable threshold is not given, it will figure that out,
+    and if no threshold is given, it'll revert thresholds of
+    the feature to their defaults, and finally, if the feature
+    is not given, it will revert every threshold.
 
     [--toggle] [switch/power] [ON/OFF]
 
-    Toggle Automation features from argument or revert if no
-    argument provided. [switch/power] determines feature may
-    toggle and [ON/OFF] determines which state to toggle the
-    same to. The feature state will be inverted if ON or OFF
-    is not specified, and both features will be reverted for
-    them be not specified.
+    Toggle Automation feature ON or OFF. The feature to toggle
+    is the first argument and the state to toggle to is the
+    second.
+
+    If state is not given, it'll invert the feature state like
+    ON -> OFF and vice versa, and if the feature is not given,
+    both features will be reverted to their default state.
 
     [--manual] [enable/disable/stop] [level/time]
 
-    Enable or disable charging, until provided battery level
-    is reached or some specified time has passed. First arg,
-    [enable/disable/stop] determines whether to stop/enable/
-    disable manual methods followed by a format string. Both
-    arguments are required if not [stop], otherwise a single
-    will work. [stop] will stop any methods running, whereas
-    [enable/disable] will enable/disable charging. It recog-
-    nizes format '{level}%' to run until level and '{time}s'
-    or '{time}m' or '{time}h' to run as time passes.
+    Enable or disable charging, or stop every manual method
+    running. The action to perform is the first argument and
+    (if not stop) the format string for the action is second
+    argument.
+
+    If the action is stop, it will stop every manual method
+    currently running, and if enable or disable, then charging
+    state will be {action}d based on the format specified by
+    the format string.
+
+    The format string will be '{level}%' if {action}ing until
+    the 'level' is hit, or '{time}s', '{time}m' or '{time}h'
+    to {action} charging until 'time' seconds, 'time' minutes
+    or 'time' hours have passed respectively.
 
     [--mkdaemon] [start/stop]
 
-    Start or stop the blex daemon, useful in cases where the
-    daemon launched by boot scrip can't be maintained in the
-    context inherited, though very rare. If [stop] is given,
-    it will stop the running daemon, and if [start], it will
-    start the daemon. It will by default assume [start] when
-    argument is not given.
+    Start or stop the blex daemon manually. It will start or
+    stop the daemon as per the first argument.
+
+    If an argument is not given, it will start the daemon.
 
     [--configure]
 
-    Configure blex' kernel interface. It should be used only
-    once after installing or upgrading blex, or if you flash
-    a different kernel. It has a special workaround for some
-    devices described in the Support section below.
+    Configure blex' kernel communication interface.
 
     [--restat]
 
-    Reset battery statistics. It is meant as an utility that
-    should be used only once in a month or more, useful only
-    for recalibrating the battery. Note that it might not be
-    functional on some older/intermediate devices.
+    Reset battery statistics on demand, useful only when re-
+    calibrating the battery, should be used only once a month.
 
     [--info]
 
-    Print some information about current battery state, blex
-    settings and whether the daemon is running or not.
+    Print information about current battery state, settings of
+    blex and whether the daemon is running or not.
 
     [--help]
 
-    Print this HELP page.
+    Print this HELP page and exit.
 
 ## Support
 
-* If the device rebooted while configuring, re-run the setup
-  to enable a workaround for that. If the issue persists, or
-  you have any other issues or bug reports, visit the thread
-  at XDA (see Links->Support Thread). Please describe widely
-  and provide relevant logs to ease out debugging. You might
-  also mention me so that I do not miss your post. If you're
-  willing to contribute, do so by creating PRs at my private
-  repo (see my GitHub profile). blex is developed in my free
-  time, so if it is useful to you, do thank me on the thread
-  please!
+* ISSUE: Device spontaneously reboots while configuring.
+* SOLUTION: Configure blex again after the device rebooted.
+
+* ISSUE: blex stops working after flashing some kernel.
+* SOLUTION: Reconfigure blex using 'blex --configure'.
+
+* NOTE: Resetting batterystats might not work for all devices.
+
+* If you experience any issue while installing, please share
+  about that in the 'official Support Thread' (see 'Links')
+  and remember to attach the '/dev/blex_install.log' logfile.
+
+* If you experience any issue with the daemon or the CUI, post
+  about that in the thread and please attach logfiles placed
+  in the folder '/sbin/.core/img/blex/log' if Magisk install,
+  or in '/data/adb/blex/log' for standard install.
+
+* All the bug reports should be widely described and must have
+  required (and relevant) logs.
+
+* If you're a developer willing to contribute, please do so
+  by creating PRs at my personal GitHub fork of blex.
+
+* I'm a college first-year student who does it all as a hobby
+  to help others, so if I helped you, kindly use the 'Thanks'
+  button on the XDA Support Thread.
 
 ## Credits
 
