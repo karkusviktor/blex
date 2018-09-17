@@ -24,6 +24,6 @@ version=0.1.2.1
 versionCode=201809171
 
 author=Jaymin Suthar
-description=blex extends/maintains batteries' life with some fun.
+description=blex helps in extending/maintaining lithium batteries' life by controlling when charging is enabled or disabled.
 
 minMagisk=1500
