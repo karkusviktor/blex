@@ -211,6 +211,10 @@
 
 ## Changelog
 
+#### 0.1.2.1
+
+* Fix the daemon can not be launched.
+
 #### 0.1.2
 
 * Fix CLI not recognizing the daemon.
