@@ -20,8 +20,8 @@
 id=blex
 name=Battery Life Extender
 
-version=0.1.2
-versionCode=201809111
+version=0.1.2.1
+versionCode=201809171
 
 author=Jaymin Suthar
 description=blex extends/maintains batteries' life with some fun.
