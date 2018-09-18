@@ -247,6 +247,10 @@
 
 ## Changelog
 
+#### 0.1.3.1
+
+* Fix daemon detections.
+
 #### 0.1.3
 
 * Fix [--mkdaemon] reporting failure.
