@@ -163,7 +163,13 @@ kill_proc() {
 }
 
 is_runningd() {
-  sleep 1 && test "$(get_proc \\--run-daemon | awk '{ print $1 }')" -eq $$
+  sleep 1
+  for pid in $(get_proc \\--run-daemon | awk '{ print $1 }'); do
+    if [ $pid != $# ]; then
+      return 0
+    fi
+  done
+  return 1
 }
 
 configurator() {
