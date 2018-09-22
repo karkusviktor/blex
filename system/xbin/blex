@@ -163,13 +163,7 @@ kill_proc() {
 }
 
 is_runningd() {
-  sleep 1
-  for pid in $(get_proc \\--run-daemon | awk '{ print $1 }'); do
-    if [ $pid != $# ]; then
-      return 0
-    fi
-  done
-  return 1
+  get_proc \\--run-daemon
 }
 
 configurator() {
@@ -270,11 +264,7 @@ configurator() {
 }
 
 daemon_exit() {
-  if test "$1" == --inv-daemon; then
-    if is_runningd; then
-      abort 'blex daemon is already running'
-    fi
-  elif ! is_runningd; then
+  if ! is_runningd; then
     abort 'blex daemon is not running'
   fi
 }
@@ -287,7 +277,7 @@ config_exit() {
 
 setup_exit() {
 
-  daemon_exit $1
+  daemon_exit
 
   if test "$1" == --test-methods; then
     if test $(switch_do) != default; then
@@ -510,7 +500,9 @@ case "$1" in
       print 'Stopping blex daemon'
       kill_proc \\--run-daemon
     else
-      setup_exit --inv-daemon
+      if is_runningd; then
+        abort 'blex daemon is already running'
+      fi
 
       print 'Starting blex daemon'
       PATH=$OLD_PATH blex --detach --skip-logs --run-daemon </dev/null >/dev/null 2>&1
@@ -525,8 +517,6 @@ case "$1" in
     write=true
     revert=false
     stat_saved=default
-
-    daemon_exit --inv-daemon
 
     set_prop switch_do default
 
