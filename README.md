@@ -28,14 +28,14 @@
 
 ## Introduction
 
-* #### blex helps in extending/maintaining lithium batteries'
-  life by controlling when charging is enabled or disabled.
+* blex helps in extending/maintaining lithium batteries' life
+  by controlling when charging is enabled or disabled.
 
 ## Details
 
-* blex is a tool that lets you enable or disable charging pro-
-  gramatically so to extend/maintain batteries' life, it is
-  reliable and also fully automated.
+* blex is a tool that lets you enable or disable charging in
+  programmatic manner so to extend/maintain batteries' life,
+  it is reliable and also fully automated.
 
 * Automation provided includes two features which are 'Auto
   Switch' and 'Auto Power'. Auto Switch is a feature which
@@ -52,10 +52,10 @@
   charge cycles the battery can have and that without losing
   anything.
 
-* And the purpose behind Auto Power is to never let the batt-
-  ery lose voltages too low that it might harm the battery
-  bringing back to the life. This helps to prevent some weird
-  issues like unwanted battery levels shown.
+* And the purpose behind Auto Power is to never let the cells
+  lose voltages too low that it might harm bring the battery
+  back to the life. This helps to prevent some weirdities like
+  unwanted battery levels shown.
 
 * blex also provides you to enable/disable charging manually
   on demand, and that introduces manual methods. You can use
@@ -80,8 +80,7 @@
   standard /system modifying install, just make sure all the
   requirements are met for that specific install mode and do
   flash the zip from either custom recovery or Magisk Manager
-  and blex will detect install mode for you and install accor-
-  dingly.
+  and blex will detect install mode and install accordingly.
 
 * NOTE: Modifying /system might make your device unbootable.
 * NOTE: If Magisk is detected, you can't do standard install.
@@ -96,8 +95,8 @@
   installing/upgrading.
 
 * I also recommend you to toggle ON/OFF Automation features
-  and set their thresholds to your needs to have a nice set-
-  and-forget concept.
+  and set their thresholds to your needs for a set-and-forget
+  concept.
 
 * NOTE: Enforcing thresholds outside blex' recommended limits
   is against the purpose of extending batteries' life and thus
@@ -143,6 +142,7 @@
 
 * Options
 
+```
     [--update] [switch/power] [disable/power] [enable]
 
     Update Automation thresholds. The feature that provides
@@ -151,8 +151,8 @@
 
     If the feature is Auto Power, second argument is power
     threshold, and if the feature is Auto Switch, second and
-    third arguments are disable and enable thresholds accor-
-    dingly.
+    third arguments are disable and enable thresholds as in
+    order.
 
     If enable threshold is not given, it will figure that out,
     and if no threshold is given, it'll revert thresholds of
@@ -199,8 +199,8 @@
 
     [--restat]
 
-    Reset battery statistics on demand, useful only when re-
-    calibrating the battery, should be used only once a month.
+    Reset battery statistics on demand. Useful in recalibraing
+    the battery, should only be used once a month.
 
     [--info]
 
@@ -210,6 +210,7 @@
     [--help]
 
     Print this HELP page and exit.
+```
 
 ## Support
 
