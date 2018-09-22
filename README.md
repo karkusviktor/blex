@@ -248,6 +248,10 @@
 
 ## Changelog
 
+#### 0.1.3.3
+
+* Minor README fix.
+
 #### 0.1.3.2
 
 * Fix daemon not running issues.
