@@ -247,6 +247,10 @@
 
 ## Changelog
 
+#### 0.1.3.2
+
+* Fix daemon not running issues.
+
 #### 0.1.3.1
 
 * Fix daemon detections.
