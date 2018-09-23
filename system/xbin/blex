@@ -141,10 +141,16 @@ switch() {
   esac
 
   if eval "$do_write"; then
+    inverted=0
     write=true
   elif $write && eval "$do_write --test-current"; then
-    write $field_inv
-    sleep 1
+    if test $inverted -eq 2; then
+      write=false
+    else
+      let inverted++
+      write $field_inv
+      sleep 1
+    fi
   else
     write=false
   fi
@@ -514,7 +520,7 @@ case "$1" in
   ;;
 
   --run-daemon)
-    write=true
+    inverted=0
     revert=false
     stat_saved=default
 
