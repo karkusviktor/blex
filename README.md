@@ -248,6 +248,11 @@
 
 ## Changelog
 
+#### 0.1.4
+
+* Limit charging state changes to only two.
+* Fix unwanted output when checking for daemon.
+
 #### 0.1.3.3
 
 * Minor README fix.
