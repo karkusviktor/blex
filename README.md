@@ -122,6 +122,7 @@
 
 ## CUI
 
+```
 * Flags
 
     [--detach]
@@ -142,7 +143,6 @@
 
 * Options
 
-```
     [--update] [switch/power] [disable/power] [enable]
 
     Update Automation thresholds. The feature that provides
@@ -211,6 +211,32 @@
 
     Print this HELP page and exit.
 ```
+
+## Examples
+
+* blex --enforce --update switch 99
+* blex --detach --manual disable 1%
+* blex --skip-logs --configure
+
+* blex --update switch 80 60
+* blex --update switch 85
+* blex --update power 15
+* blex --update switch
+* blex --update
+* blex --toggle switch ON
+* blex --toggle power OFF
+* blex --toggle switch
+* blex --toggle
+* blex --manual enable 1h
+* blex --manual disable 30m
+* blex --manual enable 90%
+* blex --mkdaemon start
+* blex --mkdaemon stop
+* blex --mkdaemon
+* blex --configure
+* blex --restat
+* blex --info
+* blex --help
 
 ## Support
 
