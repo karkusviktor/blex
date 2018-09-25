@@ -522,7 +522,12 @@ case "$1" in
   --run-daemon)
     inverted=0
     revert=false
-    stat_saved=default
+
+    if is_charging; then
+      stat_saved=ON
+    else
+      stat_saved=OFF
+    fi
 
     set_prop switch_do default
 
@@ -542,21 +547,19 @@ case "$1" in
       case $(switch_do) in
         default)
           if $(auto_switch); then
-            if test $(batt_level) -ge $(thr_disable); then
-              revert=false
-              stat_saved=OFF
-              switch --OFF
-
-            elif test $(batt_level) -le $(thr_enable); then
+            if test $(batt_level) -le $(thr_enable); then
               revert=false
               stat_saved=ON
               switch --ON
 
+            elif test $(batt_level) -ge $(thr_disable); then
+              revert=false
+              stat_saved=OFF
+              switch --OFF
+
             elif $revert; then
-              if test $stat_saved != default; then
-                switch --$stat_saved
-                revert=$write
-              fi
+              switch --$stat_saved
+              revert=$write
             fi
           fi
         ;;
