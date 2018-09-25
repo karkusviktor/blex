@@ -385,7 +385,7 @@ fi
 
 echo
 echo '************************************'
-echo '  Battery Life Extender (blex) CLI  '
+echo '  Battery Life Extender (blex) CUI  '
 echo '************************************'
 echo
 
