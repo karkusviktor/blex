@@ -121,7 +121,9 @@ is_charging() {
 write() {
   for i in 1 2; do
     if switch=$(switch_p $i 1 | grep -v dummySwitch); then
-      switch_p $i $1 >$switch
+      if [ $(cat $switch) != $(switch_p $i $1) ]; then
+        switch_p $i $1 >$switch
+      fi
     fi
   done
 }
