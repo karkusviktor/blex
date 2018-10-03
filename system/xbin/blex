@@ -21,6 +21,7 @@
 enforce=false
 
 blex_dir=/sbin/.core/img/blex
+doc_file=$blex_dir/docs/HELP
 cfg_file=$blex_dir/blex.cfg
 bin_dir=$blex_dir/bin
 
@@ -630,7 +631,11 @@ case "$1" in
     echo -e "\nDaemon State: $dm_stat\n"
   ;;
 
-  --help) cat $blex_dir/docs/HELP ;;
+  --help)
+    head -n 120 $doc_file
+    head -n 210 $doc_file | tail -n 86
+    head -n 271 $doc_file | tail -n 59
+  ;;
 
   *) abort 'Invalid argument(s), see `blex --help`' ;;
 esac
