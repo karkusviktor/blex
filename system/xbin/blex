@@ -6,8 +6,8 @@
 
 # This file is a part of "Battery Life Extender (blex)".
 
-# blex is release under the terms of GNU GPL v3 as published
-# by the Free Software Foundation. And you hereby are allowed
+# blex is released under the terms of GNU GPL v3 as published
+# by the Free Software Foundation, and you hereby are allowed
 # to use, modify or redistribute it, either pieces of it or
 # entirely under v3 or any later version of the GPL.
 
@@ -16,7 +16,7 @@
 # for the particular purpose. See the GPLv3 for details.
 
 # A copy of GPLv3 (COPYING) is placed in the root folder of
-# blex which can also be found at <https://www.gnu.org/licenses/>.
+# blex, see <https://www.gnu.org/licenses/> for more.
 
 enforce=false
 
