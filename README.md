@@ -23,7 +23,7 @@
 
 ## Links
 
-* [Git Repository](https://github.com/Magisk-Modules-Repo/Battery-Life-Extender)
+* [Git Repository](https://github.com/Magisk-Modules-Repo/blex)
 * [Support Thread](https://forum.xda-developers.com/apps/magisk/mcs-charging-controller-t3739371)
 
 ## Introduction
@@ -55,7 +55,7 @@
 * And the purpose behind Auto Power is to never let the cells
   lose voltages too low that it might harm bring the battery
   back to the life. This helps to prevent some weirdities like
-  unwanted battery levels shown.
+  unexpected battery levels shown.
 
 * blex also provides you to enable/disable charging manually
   on demand, and that introduces manual methods. You can use
@@ -68,10 +68,10 @@
 
 ## Requirements
 
-* An arm-based chipset.
+* A modern arm-based chipset.
 * Basic terminal knowledge.
 * (if Magisk install...) Magisk 14.6+.
-* (...or else) Any root solution.
+* (...or else) Any root solution,
 * (...or else) Init.d support.
 
 ## Installation
@@ -173,7 +173,7 @@
 
     Enable or disable charging, or stop every manual method
     running. The action to perform is the first argument and
-    (if not stop) the format string for the action is second
+    the format string for the action (if not stop) is second
     argument.
 
     If the action is stop, it will stop every manual method
@@ -269,7 +269,8 @@
 
 ## Credits
 
-* @topjohnwu for BusyBox and Magisk.
+* @topjohnwu for Magisk.
+* @osm0sis for his BusyBox binary.
 * Every blex/mcc beta tester :)
 
 ## Changelog
