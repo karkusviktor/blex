@@ -20,8 +20,8 @@
 id=blex
 name=Battery Life Extender
 
-version=0.1.4
-versionCode=201809231
+version=0.2
+versionCode=201810061
 
 author=Jaymin Suthar
 description=blex helps in extending/maintaining lithium batteries' life by controlling when charging is enabled or disabled.

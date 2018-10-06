@@ -1,5 +1,3 @@
-## This is the devel repository of blex, it might have bugs.
-
 ###### Battery Life Extender
 ###### JayminSuthar @ xda-developers
 
@@ -274,6 +272,16 @@
 * Every blex/mcc beta tester :)
 
 ## Changelog
+
+#### 0.2
+
+* Add examples for supported actions.
+* Symlink BusyBox applets instead of hardlinking.
+* Revert manual methods regardless of Auto Switch.
+* Check control file content before writing.
+* Filter out Changelog from [--help] output.
+* Update to osm0sis' BusyBox 1.29.3.
+* Update documentation.
 
 #### 0.1.4
 
