@@ -141,7 +141,7 @@ unzip "$3" -d $zip_dir >/dev/null
 
 if ! chmod 0755 $bb_exec; then
   abort 'Failed to extract zip'
-elif ! $bb_exec --install $bin_dir/; then
+elif ! $bb_exec --install -s $bin_dir/; then
   abort 'Chipset is not supported'
 fi
 export PATH=$bin_dir:$PATH

@@ -26,7 +26,7 @@ set -x
 
 ( (
 sleep 5
-$bin_dir/busybox --install $bin_dir/
+$bin_dir/busybox --install -s $bin_dir/
 
 sleep 120
 PATH=/sbin:/system/bin:/system/xbin:/vendor/bin blex --detach --skip-logs --run-daemon </dev/null >/dev/null 2>&1
