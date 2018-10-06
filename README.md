@@ -275,6 +275,16 @@
 
 ## Changelog
 
+#### 0.2
+
+* Add examples for supported actions.
+* Symlink BusyBox applets instead of hardlinking.
+* Revert manual methods regardless of Auto Switch.
+* Check control file content before writing.
+* Filter out Changelog from [--help] output.
+* Update to osm0sis' BusyBox 1.29.3.
+* Update documentation.
+
 #### 0.1.4
 
 * Limit charging state changes to only two.
