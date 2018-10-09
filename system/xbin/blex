@@ -541,7 +541,7 @@ case "$1" in
 
       if $(auto_power); then
         if test $(batt_level) -le $(thr_power); then
-          if ! poweroff; then
+          if ! is_charging; then
             setprop sys.powerctl shutdown
           fi
         fi
