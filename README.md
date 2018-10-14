@@ -25,6 +25,7 @@
 
 * [Git Repository](https://github.com/Magisk-Modules-Repo/blex)
 * [Support Thread](https://forum.xda-developers.com/apps/magisk/mcs-charging-controller-t3739371)
+* [Telegram Group](https://t.me/joinchat/IiBDkxCpljv5TH994qtv6Q)
 
 ## Introduction
 
@@ -249,13 +250,14 @@
 * NOTE: Resetting batterystats might not work for all devices.
 
 * If you experience any issue while installing, please share
-  about that in the 'official Support Thread' (see 'Links')
-  and remember to attach the '/dev/blex_install.log' logfile.
+  about that in either the 'Support Thread' (see 'Links') or
+  'Telegram Group' (again, 'Links') and remember to attach
+  the '/dev/blex_install.log' logfile.
 
 * If you experience any issue with the daemon or the CUI, post
-  about that in the thread and please attach logfiles placed
-  in the folder '/sbin/.core/img/blex/log' if Magisk install,
-  or in '/data/adb/blex/log' for standard install.
+  about that in the thread or group and please attach logfiles
+  placed in the folder '/sbin/.core/img/blex/log' if Magisk
+  install, or in '/data/adb/blex/log' for standard install.
 
 * All the bug reports should be widely described and must have
   required (and relevant) logs.
