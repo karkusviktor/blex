@@ -254,7 +254,7 @@
   'Telegram Group' (again, 'Links') and remember to attach
   the '/dev/blex_install.log' logfile.
 
-* If you experience any issue with the daemon or the CUI, post
+* If you experience any issue with the daemon or CUI, write
   about that in the thread or group and please attach logfiles
   placed in the folder '/sbin/.core/img/blex/log' if Magisk
   install, or in '/data/adb/blex/log' for standard install.
