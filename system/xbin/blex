@@ -149,7 +149,7 @@ switch() {
     inverted=0
     write=true
   elif $write && eval "$do_write --test-current"; then
-    if test $inverted -eq 2; then
+    if test $inverted -eq 3; then
       write=false
     else
       let inverted++
