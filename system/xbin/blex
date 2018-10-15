@@ -122,9 +122,11 @@ is_charging() {
 write() {
   for i in 1 2; do
     if switch=$(switch_p $i 1 | grep -v dummySwitch); then
-      if [ $(cat $switch) != $(switch_p $i $1) ]; then
-        switch_p $i $1 >$switch
+      if [ $(cat $switch) == $(switch_p $i $1) ]; then
+        switch_p $i $2 >$switch
+        sleep 1
       fi
+      switch_p $i $1 >$switch
     fi
   done
 }
@@ -151,7 +153,7 @@ switch() {
       write=false
     else
       let inverted++
-      write $field_inv
+      write $field_inv $field
       sleep 1
     fi
   else
@@ -159,7 +161,7 @@ switch() {
   fi
 
   if $write; then
-    write $field
+    write $field $field_inv
   fi
 }
 
