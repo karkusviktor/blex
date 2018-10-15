@@ -28,7 +28,7 @@ bin_dir=$blex_dir/bin
 print() {
   case "$1" in
     --error) echo $3 "ERROR: $2" ;;
-    --info)  echo $3 "INFO: $2"  ;;
+    --note)  echo $3 "NOTE: $2"  ;;
     *)       echo $2 "- $1"      ;;
   esac
 }
@@ -188,11 +188,11 @@ configurator() {
     fi
   fi
 
-  print --info 'Press enter when device is charging: ' -n
+  print --note 'Press enter when device is charging: ' -n
   read i
 
   if test -f $sr_sig; then
-    print --info 'Reboot detected and workarounded'
+    print --note 'Reboot detected and workarounded'
     skip_root=true
   fi
 
@@ -303,7 +303,7 @@ toggle() {
     OFF) new_val=false ;;
 
     *)
-      print --info 'Inverting feature detected'
+      print --note 'Inverting feature detected'
       print 'Checking configurations'
       if $($1); then
         new_val=false
@@ -336,13 +336,13 @@ charge() {
 
   print 'Parsing argument'
   if echo $2 | grep -Eq '^[0-9]+%$'; then
-    print --info 'Level based method call detected'
+    print --note 'Level based method call detected'
 
     end_level=$(echo $2 | tr -d %)
     limits_wrap $end_level 1 99
 
   elif echo $2 | grep -Eq '^[0-9]+[smh]?$'; then
-    print --info 'Time based method call detected'
+    print --note 'Time based method call detected'
   else
     abort 'Invalid format'
   fi
@@ -435,7 +435,7 @@ case "$1" in
             thr_enable=1
           fi
         else
-          print --info 'Reverting thresholds detected'
+          print --note 'Reverting thresholds detected'
           thr_disable=80
           thr_enable=70
         fi
@@ -452,7 +452,7 @@ case "$1" in
           print 'Validating argument'
           validate_wrap $3 5 20
         else
-          print --info 'Reverting threshold detected'
+          print --note 'Reverting threshold detected'
           thr_power=20
         fi
 
@@ -461,7 +461,7 @@ case "$1" in
       ;;
 
       *)
-        print --info 'Reverting thresholds detected'
+        print --note 'Reverting thresholds detected'
         print 'Updating Auto Switch/Power thresholds'
         set_prop thr_disable 80
         set_prop thr_enable  70
@@ -477,7 +477,7 @@ case "$1" in
       power)  toggle auto_power  'Auto Power'  $3 ;;
 
       *)
-        print --info 'Reverting features detected'
+        print --note 'Reverting features detected'
         setup_exit
         print 'Toggling Auto Switch/Power'
         set_prop auto_switch true

@@ -46,7 +46,7 @@ ui_print() {
 print() {
   case "$1" in
     --error) ui_print "ERROR: $2" ;;
-    --info)  ui_print "INFO: $2"  ;;
+    --note)  ui_print "NOTE: $2"  ;;
     *)       ui_print "- $1"      ;;
   esac
 }
@@ -156,7 +156,7 @@ print 'Checking for Magisk support'
 if test "$(get_prop MAGISK_VER_CODE $de_data/magisk/util_functions.sh)" -ge 1468; then
   rw=ro
 else
-  print --info 'Magisk is not detected, install in system mode'
+  print --note 'Magisk is not detected, install in system mode'
   magisk_mode=false
   rw=rw
 fi
