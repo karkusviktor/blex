@@ -634,9 +634,9 @@ case "$1" in
   ;;
 
   --help)
-    head -n 120 $doc_file
-    head -n 210 $doc_file | tail -n 86
-    head -n 271 $doc_file | tail -n 59
+    head -n 123 $doc_file
+    head -n 211 $doc_file | tail -n 87
+    head -n 274 $doc_file | tail -n 60
   ;;
 
   *) abort 'Invalid argument(s), see `blex --help`' ;;
