@@ -122,6 +122,7 @@ is_charging() {
 write() {
   for i in 1 2; do
     if switch=$(switch_p $i 1 | grep -v dummySwitch); then
+
       if [ $(cat $switch) == $(switch_p $i $1) ]; then
         switch_p $i $2 >$switch
         sleep 1
@@ -146,13 +147,15 @@ switch() {
   esac
 
   if eval "$do_write"; then
-    inverted=0
+    inverted=false
     write=true
+
   elif $write && eval "$do_write --test-current"; then
-    if test $inverted -eq 3; then
+    if $inverted; then
       write=false
+
     else
-      let inverted++
+      inverted=true
       write $field_inv $field
       sleep 1
     fi
@@ -525,8 +528,8 @@ case "$1" in
   ;;
 
   --run-daemon)
-    inverted=0
     revert=false
+    inverted=false
 
     if is_charging; then
       stat_saved=ON
