@@ -277,6 +277,14 @@
 
 ## Changelog
 
+#### 0.3
+
+* Fix default PATH for daemon startup.
+* Fix for kernels not responding node changes.
+* Limit checking for current to just once.
+* Minor UI change.
+* Documentations update.
+
 #### 0.2
 
 * Add examples for supported actions.
