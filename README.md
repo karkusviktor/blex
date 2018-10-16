@@ -1,5 +1,3 @@
-## This is the devel repository of blex, it might have bugs.
-
 ###### Battery Life Extender
 ###### JayminSuthar @ xda-developers
 
@@ -276,6 +274,14 @@
 * Every blex/mcc beta tester :)
 
 ## Changelog
+
+#### 0.3
+
+* Fix default PATH for daemon startup.
+* Fix for kernels not responding node changes.
+* Limit checking for current to just once.
+* Minor UI change.
+* Documentations update.
 
 #### 0.2
 
